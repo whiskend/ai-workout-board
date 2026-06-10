@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateWorkoutPostDto } from './dto/create-workout-post.dto';
 import { PrismaService } from '../prisma/prisma.service';
+import { UpdateWorkoutPostDto } from './dto/update-workout-post.dto';
 
 const workoutPostInclude = {
   author: {
@@ -96,5 +97,28 @@ export class PostsService {
     }
 
     return post;
+  }
+
+  async update(id: number, updateWorkoutPostDto: UpdateWorkoutPostDto) {
+    const post = await this.prisma.workoutPost.findUnique({
+      where: { id },
+    });
+
+    if (!post) {
+      throw new NotFoundException('게시글을 찾을 수 없습니다.');
+    }
+
+    return this.prisma.workoutPost.update({
+      where: { id },
+      data: {
+        title: updateWorkoutPostDto.title,
+        workoutDate: updateWorkoutPostDto.workoutDate
+          ? new Date(updateWorkoutPostDto.workoutDate)
+          : undefined,
+        bodyPart: updateWorkoutPostDto.bodyPart,
+        memo: updateWorkoutPostDto.memo,
+      },
+      include: workoutPostInclude,
+    });
   }
 }
