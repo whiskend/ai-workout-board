@@ -15,28 +15,29 @@ model User {
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
-  workoutPosts WorkoutPost[]
+  posts Post[]
 }
 
-model WorkoutPost {
-  id          Int               @id @default(autoincrement())
-  authorId    Int
-  title       String
-  workoutDate DateTime
-  bodyPart    String
-  memo        String?
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+model Post {
+  id        Int        @id @default(autoincrement())
+  authorId  Int
+  title     String
+  date      DateTime   @map("workoutDate")
+  bodyPart  String
+  memo      String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 
-  author      User              @relation(fields: [authorId], references: [id])
-  exercises   WorkoutExercise[]
+  author    User       @relation(fields: [authorId], references: [id])
+  exercises Exercise[]
 
   @@index([authorId])
-  @@index([workoutDate])
+  @@index([date])
   @@index([bodyPart])
+  @@map("WorkoutPost")
 }
 
-model WorkoutExercise {
+model Exercise {
   id             Int          @id @default(autoincrement())
   postId         Int
   exerciseName   String
@@ -46,21 +47,23 @@ model WorkoutExercise {
   orderIndex     Int          @default(0)
   memo           String?
 
-  post           WorkoutPost  @relation(fields: [postId], references: [id], onDelete: Cascade)
-  sets           WorkoutSet[]
+  post           Post         @relation(fields: [postId], references: [id], onDelete: Cascade)
+  sets           ExerciseSet[]
 
   @@index([postId])
   @@index([exerciseName])
+  @@map("WorkoutExercise")
 }
 
-model WorkoutSet {
-  id                  Int             @id @default(autoincrement())
-  exerciseId           Int
-  setNumber            Int
-  reps                 Int
-  perceivedDifficulty  Int?
+model ExerciseSet {
+  id                  Int       @id @default(autoincrement())
+  exerciseId          Int
+  setNumber           Int
+  reps                Int
+  perceivedDifficulty Int?
 
-  exercise             WorkoutExercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  exercise Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
 
   @@index([exerciseId])
+  @@map("WorkoutSet")
 }

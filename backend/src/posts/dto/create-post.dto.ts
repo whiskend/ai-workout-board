@@ -8,15 +8,15 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { CreateWorkoutExerciseDto } from './create-workout-exercise.dto';
+import { CreateExerciseDto } from './create-exercise.dto';
 
-export class CreateWorkoutPostDto {
+export class CreatePostDto {
   @IsString()
   @IsNotEmpty()
   title: string;
 
   @IsDateString()
-  workoutDate: string;
+  date: string;
 
   @IsString()
   @IsNotEmpty()
@@ -29,6 +29,6 @@ export class CreateWorkoutPostDto {
   @IsArray()
   @ArrayMinSize(1)
   @ValidateNested({ each: true })
-  @Type(() => CreateWorkoutExerciseDto)
-  exercises: CreateWorkoutExerciseDto[];
+  @Type(() => CreateExerciseDto)
+  exercises: CreateExerciseDto[];
 }

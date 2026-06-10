@@ -1,6 +1,6 @@
 import { IsInt, IsOptional, Max, Min } from 'class-validator';
 
-export class CreateWorkoutSetDto {
+export class CreateSetDto {
   @IsInt()
   @Min(1)
   setNumber: number;

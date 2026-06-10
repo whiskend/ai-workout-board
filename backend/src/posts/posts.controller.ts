@@ -1,15 +1,23 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Post, Patch } from '@nestjs/common';
-import { CreateWorkoutPostDto } from './dto/create-workout-post.dto';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+} from '@nestjs/common';
+import { CreatePostDto } from './dto/create-post.dto';
 import { PostsService } from './posts.service';
-import { UpdateWorkoutPostDto } from './dto/update-workout-post.dto';
+import { UpdatePostDto } from './dto/update-post.dto';
 
 @Controller('posts')
 export class PostsController {
   constructor(private readonly postsService: PostsService) {}
 
   @Post()
-  create(@Body() createWorkoutPostDto: CreateWorkoutPostDto) {
-    return this.postsService.create(createWorkoutPostDto);
+  create(@Body() createPostDto: CreatePostDto) {
+    return this.postsService.create(createPostDto);
   }
 
   @Get()
@@ -25,8 +33,8 @@ export class PostsController {
   @Patch(':id')
   update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() updateWorkoutPostDto: UpdateWorkoutPostDto,
+    @Body() updatePostDto: UpdatePostDto,
   ) {
-    return this.postsService.update(id, updateWorkoutPostDto);
+    return this.postsService.update(id, updatePostDto);
   }
 }
