@@ -144,4 +144,23 @@ export class PostsService {
       include: postInclude,
     });
   }
+
+  async remove(id: number) {
+    const post = await this.prisma.post.findUnique({
+      where: { id },
+    });
+
+    if (!post) {
+      throw new NotFoundException('게시글을 찾을 수 없습니다.');
+    }
+
+    await this.prisma.post.delete({
+      where: { id },
+    });
+
+    return {
+      deleted: true,
+      id,
+    };
+  }
 }
