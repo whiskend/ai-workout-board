@@ -1,9 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { CreateWorkoutPostDto } from './dto/create-workout-post.dto';
+import { CreatePostDto } from './dto/create-post.dto';
 import { PrismaService } from '../prisma/prisma.service';
-import { UpdateWorkoutPostDto } from './dto/update-workout-post.dto';
+import { UpdatePostDto } from './dto/update-post.dto';
 
-const workoutPostInclude = {
+const postInclude = {
   author: {
     select: {
       id: true,
@@ -32,29 +32,29 @@ export class PostsService {
   private async getDemoUser() {
     return this.prisma.user.upsert({
       where: {
-        email: 'demo@workout.local',
+        email: 'demo@board.local',
       },
       update: {},
       create: {
-        email: 'demo@workout.local',
+        email: 'demo@board.local',
         nickname: '데모 사용자',
         passwordHash: 'not-used-yet',
       },
     });
   }
 
-  async create(createWorkoutPostDto: CreateWorkoutPostDto) {
+  async create(createPostDto: CreatePostDto) {
     const author = await this.getDemoUser();
 
-    return this.prisma.workoutPost.create({
+    return this.prisma.post.create({
       data: {
         authorId: author.id,
-        title: createWorkoutPostDto.title,
-        workoutDate: new Date(createWorkoutPostDto.workoutDate),
-        bodyPart: createWorkoutPostDto.bodyPart,
-        memo: createWorkoutPostDto.memo,
+        title: createPostDto.title,
+        date: new Date(createPostDto.date),
+        bodyPart: createPostDto.bodyPart,
+        memo: createPostDto.memo,
         exercises: {
-          create: createWorkoutPostDto.exercises.map((exercise, index) => ({
+          create: createPostDto.exercises.map((exercise, index) => ({
             exerciseName: exercise.exerciseName,
             normalizedName: exercise.exerciseName.trim().toLowerCase(),
             weightKg: exercise.weightKg,
@@ -71,25 +71,25 @@ export class PostsService {
           })),
         },
       },
-      include: workoutPostInclude,
+      include: postInclude,
     });
   }
 
   async findAll() {
-    return this.prisma.workoutPost.findMany({
+    return this.prisma.post.findMany({
       orderBy: {
         createdAt: 'desc',
       },
-      include: workoutPostInclude,
+      include: postInclude,
     });
   }
 
   async findOne(id: number) {
-    const post = await this.prisma.workoutPost.findUnique({
+    const post = await this.prisma.post.findUnique({
       where: {
         id,
       },
-      include: workoutPostInclude,
+      include: postInclude,
     });
 
     if (!post) {
@@ -99,8 +99,8 @@ export class PostsService {
     return post;
   }
 
-  async update(id: number, updateWorkoutPostDto: UpdateWorkoutPostDto) {
-    const post = await this.prisma.workoutPost.findUnique({
+  async update(id: number, updatePostDto: UpdatePostDto) {
+    const post = await this.prisma.post.findUnique({
       where: { id },
     });
 
@@ -108,17 +108,40 @@ export class PostsService {
       throw new NotFoundException('게시글을 찾을 수 없습니다.');
     }
 
-    return this.prisma.workoutPost.update({
+    if (updatePostDto.exercises) {
+      await this.prisma.exercise.deleteMany({
+        where: { postId: id },
+      });
+    }
+
+    return this.prisma.post.update({
       where: { id },
       data: {
-        title: updateWorkoutPostDto.title,
-        workoutDate: updateWorkoutPostDto.workoutDate
-          ? new Date(updateWorkoutPostDto.workoutDate)
+        title: updatePostDto.title,
+        date: updatePostDto.date ? new Date(updatePostDto.date) : undefined,
+        bodyPart: updatePostDto.bodyPart,
+        memo: updatePostDto.memo,
+        exercises: updatePostDto.exercises
+          ? {
+              create: updatePostDto.exercises.map((exercise, index) => ({
+                exerciseName: exercise.exerciseName,
+                normalizedName: exercise.exerciseName.trim().toLowerCase(),
+                weightKg: exercise.weightKg,
+                targetReps: exercise.targetReps,
+                orderIndex: exercise.orderIndex ?? index,
+                memo: exercise.memo,
+                sets: {
+                  create: exercise.sets.map((set) => ({
+                    setNumber: set.setNumber,
+                    reps: set.reps,
+                    perceivedDifficulty: set.perceivedDifficulty,
+                  })),
+                },
+              })),
+            }
           : undefined,
-        bodyPart: updateWorkoutPostDto.bodyPart,
-        memo: updateWorkoutPostDto.memo,
       },
-      include: workoutPostInclude,
+      include: postInclude,
     });
   }
 }
