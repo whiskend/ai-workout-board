@@ -5,7 +5,7 @@ export default function HomePage() {
     
     <div>
       <h1>여기는 HomePage 입니다.</h1>
-      <Button>뒤로 가기</Button>
+      <Button text="뒤로 가기" type="back" />
     </div>
   )
 }
