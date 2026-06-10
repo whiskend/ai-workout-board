@@ -15,8 +15,20 @@ describe('AppController', () => {
   });
 
   describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(appController.getHello()).toBe('Hello World!');
+    it('should return backend running message', () => {
+      expect(appController.getRoot()).toEqual({
+        message: 'Workout board backend is running',
+      });
+    });
+  });
+
+  describe('health', () => {
+    it('should return health status', () => {
+      expect(appController.getHealth()).toEqual({
+        status: 'ok',
+        service: 'backend',
+        timestamp: expect.any(String),
+      });
     });
   });
 });
