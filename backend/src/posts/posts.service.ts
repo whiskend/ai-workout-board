@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreatePostDto } from './dto/create-post.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdatePostDto } from './dto/update-post.dto';
@@ -29,26 +29,10 @@ const postInclude = {
 export class PostsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  private async getDemoUser() {
-    return this.prisma.user.upsert({
-      where: {
-        email: 'demo@board.local',
-      },
-      update: {},
-      create: {
-        email: 'demo@board.local',
-        nickname: '데모 사용자',
-        passwordHash: 'not-used-yet',
-      },
-    });
-  }
-
-  async create(createPostDto: CreatePostDto) {
-    const author = await this.getDemoUser();
-
+  async create(userId: number, createPostDto: CreatePostDto) {
     return this.prisma.post.create({
       data: {
-        authorId: author.id,
+        authorId: userId,
         title: createPostDto.title,
         date: new Date(createPostDto.date),
         bodyPart: createPostDto.bodyPart,
