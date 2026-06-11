@@ -83,13 +83,17 @@ export class PostsService {
     return post;
   }
 
-  async update(id: number, updatePostDto: UpdatePostDto) {
+  async update(userId: number, id: number, updatePostDto: UpdatePostDto) {
     const post = await this.prisma.post.findUnique({
       where: { id },
     });
 
     if (!post) {
       throw new NotFoundException('게시글을 찾을 수 없습니다.');
+    }
+
+    if (post.authorId !== userId) {
+      throw new ForbiddenException('게시글을 수정할 권한이 없습니다.');
     }
 
     if (updatePostDto.exercises) {
@@ -129,13 +133,17 @@ export class PostsService {
     });
   }
 
-  async remove(id: number) {
+  async remove(userId: number, id: number) {
     const post = await this.prisma.post.findUnique({
       where: { id },
     });
 
     if (!post) {
       throw new NotFoundException('게시글을 찾을 수 없습니다.');
+    }
+
+    if (post.authorId !== userId) {
+      throw new ForbiddenException('게시글을 삭제할 권한이 없습니다.');
     }
 
     await this.prisma.post.delete({
