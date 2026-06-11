@@ -10,12 +10,11 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { Request } from '@nestjs/common';
-import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { Request } from 'express';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CreatePostDto } from './dto/create-post.dto';
 import { PostsService } from './posts.service';
 import { UpdatePostDto } from './dto/update-post.dto';
-import { request } from 'http';
 
 type AuthenticatedRequest = Request & {
   user: {
