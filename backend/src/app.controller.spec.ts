@@ -17,7 +17,7 @@ describe('AppController', () => {
   describe('root', () => {
     it('should return backend running message', () => {
       expect(appController.getRoot()).toEqual({
-        message: 'Workout board backend is running',
+        message: 'Post board backend is running',
       });
     });
   });

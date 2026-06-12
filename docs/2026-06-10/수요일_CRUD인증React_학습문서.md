@@ -125,9 +125,9 @@ backend/
       prisma.service.ts
     posts/
       dto/
-        create-workout-post.dto.ts
-        create-workout-exercise.dto.ts
-        create-workout-set.dto.ts
+        create-post.dto.ts
+        create-exercise.dto.ts
+        create-set.dto.ts
       posts.module.ts
       posts.controller.ts
       posts.service.ts
@@ -263,16 +263,16 @@ id가 1인 게시글을 수정한다.
 파일 생성:
 
 ```bash
-touch backend/src/posts/dto/update-workout-post.dto.ts
+touch backend/src/posts/dto/update-post.dto.ts
 ```
 
 추천 코드:
 
 ```ts
 import { PartialType } from '@nestjs/mapped-types';
-import { CreateWorkoutPostDto } from './create-workout-post.dto';
+import { CreatePostDto } from './create-post.dto';
 
-export class UpdateWorkoutPostDto extends PartialType(CreateWorkoutPostDto) {}
+export class UpdatePostDto extends PartialType(CreatePostDto) {}
 ```
 
 이 코드가 안 되면 패키지를 설치한다.
@@ -285,7 +285,7 @@ npm install @nestjs/mapped-types
 뜻:
 
 ```text
-CreateWorkoutPostDto의 모든 필드를 선택 사항으로 바꾼 DTO를 만든다.
+CreatePostDto의 모든 필드를 선택 사항으로 바꾼 DTO를 만든다.
 ```
 
 게시글 생성은 제목, 날짜, 운동 부위, 운동 목록이 필수다.
@@ -306,7 +306,7 @@ backend/src/posts/posts.controller.ts
 
 ```ts
 import { Patch } from '@nestjs/common';
-import { UpdateWorkoutPostDto } from './dto/update-workout-post.dto';
+import { UpdatePostDto } from './dto/update-post.dto';
 ```
 
 기존 import가 한 줄이면 합쳐서 정리한다.
@@ -329,9 +329,9 @@ Controller 안에 추가:
 @Patch(':id')
 update(
   @Param('id', ParseIntPipe) id: number,
-  @Body() updateWorkoutPostDto: UpdateWorkoutPostDto,
+  @Body() updatePostDto: UpdatePostDto,
 ) {
-  return this.postsService.update(id, updateWorkoutPostDto);
+  return this.postsService.update(id, updatePostDto);
 }
 ```
 
@@ -342,7 +342,7 @@ PATCH /posts/1 요청이 들어온다.
         ↓
 id 값 1을 숫자로 바꾼다.
         ↓
-request body를 UpdateWorkoutPostDto로 받는다.
+request body를 UpdatePostDto로 받는다.
         ↓
 PostsService.update(1, body)를 실행한다.
 ```
@@ -358,14 +358,14 @@ backend/src/posts/posts.service.ts
 추가 import:
 
 ```ts
-import { UpdateWorkoutPostDto } from './dto/update-workout-post.dto';
+import { UpdatePostDto } from './dto/update-post.dto';
 ```
 
 기본 구조:
 
 ```ts
-async update(id: number, updateWorkoutPostDto: UpdateWorkoutPostDto) {
-  const post = await this.prisma.workoutPost.findUnique({
+async update(id: number, updatePostDto: UpdatePostDto) {
+  const post = await this.prisma.post.findUnique({
     where: { id },
   });
 
@@ -373,17 +373,17 @@ async update(id: number, updateWorkoutPostDto: UpdateWorkoutPostDto) {
     throw new NotFoundException('게시글을 찾을 수 없습니다.');
   }
 
-  return this.prisma.workoutPost.update({
+  return this.prisma.post.update({
     where: { id },
     data: {
-      title: updateWorkoutPostDto.title,
-      workoutDate: updateWorkoutPostDto.workoutDate
-        ? new Date(updateWorkoutPostDto.workoutDate)
+      title: updatePostDto.title,
+      date: updatePostDto.date
+        ? new Date(updatePostDto.date)
         : undefined,
-      bodyPart: updateWorkoutPostDto.bodyPart,
-      memo: updateWorkoutPostDto.memo,
+      bodyPart: updatePostDto.bodyPart,
+      memo: updatePostDto.memo,
     },
-    include: workoutPostInclude,
+    include: postInclude,
   });
 }
 ```
@@ -414,15 +414,15 @@ null      = 비움
 ```text
 exercises가 요청 body에 있으면
 기존 exercises를 전부 삭제한다.
-WorkoutExercise 삭제 시 WorkoutSet도 cascade로 같이 삭제된다.
+Exercise 삭제 시 Set도 cascade로 같이 삭제된다.
 새 exercises와 sets를 다시 생성한다.
 ```
 
 대략 흐름:
 
 ```ts
-if (updateWorkoutPostDto.exercises) {
-  await this.prisma.workoutExercise.deleteMany({
+if (updatePostDto.exercises) {
+  await this.prisma.exercise.deleteMany({
     where: { postId: id },
   });
 }
@@ -431,9 +431,9 @@ if (updateWorkoutPostDto.exercises) {
 그다음 update의 data 안에 새 exercises를 넣는다.
 
 ```ts
-exercises: updateWorkoutPostDto.exercises
+exercises: updatePostDto.exercises
   ? {
-      create: updateWorkoutPostDto.exercises.map((exercise, index) => ({
+      create: updatePostDto.exercises.map((exercise, index) => ({
         exerciseName: exercise.exerciseName,
         normalizedName: exercise.exerciseName.trim().toLowerCase(),
         weightKg: exercise.weightKg,
@@ -497,7 +497,7 @@ remove(@Param('id', ParseIntPipe) id: number) {
 
 ```ts
 async remove(id: number) {
-  const post = await this.prisma.workoutPost.findUnique({
+  const post = await this.prisma.post.findUnique({
     where: { id },
   });
 
@@ -505,7 +505,7 @@ async remove(id: number) {
     throw new NotFoundException('게시글을 찾을 수 없습니다.');
   }
 
-  await this.prisma.workoutPost.delete({
+  await this.prisma.post.delete({
     where: { id },
   });
 
@@ -519,16 +519,16 @@ async remove(id: number) {
 Prisma schema에서 관계가 아래처럼 되어 있다.
 
 ```prisma
-post WorkoutPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
 ```
 
 뜻:
 
 ```text
-WorkoutPost가 삭제되면
-연결된 WorkoutExercise도 같이 삭제된다.
-WorkoutExercise가 삭제되면
-연결된 WorkoutSet도 같이 삭제된다.
+Post가 삭제되면
+연결된 Exercise도 같이 삭제된다.
+Exercise가 삭제되면
+연결된 Set도 같이 삭제된다.
 ```
 
 그래서 게시글 삭제 시 운동/세트가 같이 정리된다.
@@ -1016,7 +1016,7 @@ POST /posts
         ↓
 getDemoUser()
         ↓
-demo@workout.local 사용자로 글 작성
+demo@board.local 사용자로 글 작성
 ```
 
 인증을 붙이면 이 흐름은 바뀌어야 한다.
@@ -1062,9 +1062,9 @@ create 수정:
 @Post()
 create(
   @Req() request: AuthenticatedRequest,
-  @Body() createWorkoutPostDto: CreateWorkoutPostDto,
+  @Body() createPostDto: CreatePostDto,
 ) {
-  return this.postsService.create(request.user.userId, createWorkoutPostDto);
+  return this.postsService.create(request.user.userId, createPostDto);
 }
 ```
 
@@ -1073,10 +1073,10 @@ create(
 기존:
 
 ```ts
-async create(createWorkoutPostDto: CreateWorkoutPostDto) {
+async create(createPostDto: CreatePostDto) {
   const author = await this.getDemoUser();
 
-  return this.prisma.workoutPost.create({
+  return this.prisma.post.create({
     data: {
       authorId: author.id,
       ...
@@ -1088,8 +1088,8 @@ async create(createWorkoutPostDto: CreateWorkoutPostDto) {
 변경:
 
 ```ts
-async create(authorId: number, createWorkoutPostDto: CreateWorkoutPostDto) {
-  return this.prisma.workoutPost.create({
+async create(authorId: number, createPostDto: CreatePostDto) {
+  return this.prisma.post.create({
     data: {
       authorId,
       ...
@@ -1124,7 +1124,7 @@ import { ForbiddenException } from '@nestjs/common';
 검사 흐름:
 
 ```ts
-const post = await this.prisma.workoutPost.findUnique({
+const post = await this.prisma.post.findUnique({
   where: { id },
 });
 
@@ -1143,7 +1143,7 @@ if (post.authorId !== authorId) {
 async update(
   id: number,
   authorId: number,
-  updateWorkoutPostDto: UpdateWorkoutPostDto,
+  updatePostDto: UpdatePostDto,
 ) {
   ...
 }
@@ -1165,9 +1165,9 @@ Controller도 request.user.userId를 넘기도록 바꾼다.
 update(
   @Req() request: AuthenticatedRequest,
   @Param('id', ParseIntPipe) id: number,
-  @Body() updateWorkoutPostDto: UpdateWorkoutPostDto,
+  @Body() updatePostDto: UpdatePostDto,
 ) {
-  return this.postsService.update(id, request.user.userId, updateWorkoutPostDto);
+  return this.postsService.update(id, request.user.userId, updatePostDto);
 }
 
 @UseGuards(JwtAuthGuard)
@@ -1262,7 +1262,7 @@ curl -X POST http://localhost:3000/posts \
   -H "Authorization: Bearer $TOKEN" \
   -d '{
     "title": "오늘 가슴 운동",
-    "workoutDate": "2026-06-10",
+    "date": "2026-06-10",
     "bodyPart": "가슴",
     "memo": "마지막 세트가 힘들었다.",
     "exercises": [
@@ -1477,7 +1477,7 @@ posts state에 저장
 
 ```text
 title
-workoutDate
+date
 bodyPart
 exerciseName
 weightKg
@@ -1492,7 +1492,7 @@ React가 백엔드로 보낼 JSON:
 ```json
 {
   "title": "오늘 가슴 운동",
-  "workoutDate": "2026-06-10",
+  "date": "2026-06-10",
   "bodyPart": "가슴",
   "memo": "마지막 세트가 힘들었다.",
   "exercises": [
