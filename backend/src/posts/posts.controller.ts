@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   Delete,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -38,8 +39,8 @@ export class PostsController {
   }
 
   @Get()
-  findAll() {
-    return this.postsService.findAll();
+  findAll(@Query('keyword') keyword?: string) {
+    return this.postsService.findAll(keyword);
   }
 
   @Get(':id')

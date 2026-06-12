@@ -59,8 +59,41 @@ export class PostsService {
     });
   }
 
-  async findAll() {
+  async findAll(keyword?: string) {
+    const trimmedKeyword = keyword?.trim();
+
     return this.prisma.post.findMany({
+      where: trimmedKeyword
+        ? {
+            OR: [
+              {
+                title: {
+                  contains: trimmedKeyword,
+                  mode: 'insensitive',
+                },
+              },
+              {
+                exercises: {
+                  some: {
+                    exerciseName: {
+                      contains: trimmedKeyword,
+                      mode: 'insensitive',
+                    },
+                  },
+                },
+              },
+              {
+                exercises: {
+                  some: {
+                    normalizedName: {
+                      contains: trimmedKeyword.toLowerCase(),
+                    },
+                  },
+                },
+              },
+            ],
+          }
+        : undefined,
       orderBy: {
         createdAt: 'desc',
       },
