@@ -5,204 +5,359 @@
 
 ---
 
-# 0. 오늘 하는 것
+# 0. 구현 전에 먼저 잡을 그림
 
-오늘은 크게 세 가지를 한다.
+아직 코드를 치지 말고, 오늘 만들 장면부터 먼저 잡는다.
+
+금요일까지는 이 흐름을 만들었다.
 
 ```text
-1. FastAPI AI 서버에 분석 API 만들기
-2. NestJS에서 FastAPI를 호출하는 API 만들기
-3. React 게시글 상세 화면에서 AI 분석 버튼 연결하기
+React 화면
+-> NestJS 백엔드
+-> PostgreSQL DB
 ```
 
-한 문장으로 말하면:
+예를 들면:
 
 ```text
-게시글 상세 화면
+게시글 작성 버튼 클릭
+-> React가 NestJS에 요청
+-> NestJS가 DB에 저장
+-> 저장된 게시글을 화면에 표시
+```
+
+토요일에는 여기에 **AI 서버**가 하나 더 붙는다.
+
+```text
+React 화면
 -> NestJS 백엔드
 -> FastAPI AI 서버
--> 분석 결과
--> 다시 화면 표시
+-> NestJS 백엔드
+-> React 화면
 ```
 
-오늘 최종 흐름:
+오늘 만들 장면은 딱 이것이다.
 
 ```text
-사용자가 로그인한다.
+게시글 상세 화면에서
+"AI 분석" 버튼을 누른다.
         ↓
-게시글 상세 화면에 들어간다.
-        ↓
-AI 분석 버튼을 누른다.
-        ↓
-React가 POST /posts/:id/analyze 요청을 보낸다.
-        ↓
-NestJS가 현재 게시글과 이전 기록을 조회한다.
-        ↓
-NestJS가 FastAPI /analysis/demo 로 분석 요청을 보낸다.
-        ↓
-FastAPI가 요약과 다음 운동 목표를 만든다.
-        ↓
-NestJS가 결과를 React에 돌려준다.
-        ↓
-React가 분석 결과를 화면에 표시한다.
+화면에 요약, 추천, 다음 목표가 나온다.
 ```
 
-오늘 연결할 API:
+오늘은 진짜 똑똑한 AI를 만드는 날이 아니다.
+
+오늘은 먼저 **길을 뚫는 날**이다.
 
 ```text
-GET  http://localhost:8000/health
-POST http://localhost:8000/analysis/demo
-POST http://localhost:3000/posts/:id/analyze
+React가 NestJS를 부르고,
+NestJS가 FastAPI를 부르고,
+FastAPI가 분석 결과를 돌려주고,
+React가 그 결과를 화면에 보여준다.
 ```
 
-오늘 하지 않는 것:
+이 0번 예열은 뒤의 작업 전체와 연결된다.
 
-```text
-댓글
-태그
-페이징
-완성형 RAG
-완성형 MCP
-완성형 Agent
-pgvector embedding 검색
-복잡한 프롬프트 엔지니어링
-```
-
-오늘은 **AI 서버 연결과 분석 버튼 동작**이 핵심이다.
+| 지금 이해할 말 | 뒤에서 실제로 하는 번호 |
+| --- | --- |
+| FastAPI AI 서버가 분석 결과를 만든다 | 4번, 5번, 6번, 7번, 8번 |
+| NestJS가 FastAPI를 호출한다 | 9번, 10번, 11번, 12번, 13번, 14번, 15번, 16번 |
+| React가 분석 버튼을 누르고 결과를 보여준다 | 17번, 18번, 19번 |
+| 마지막에 전체 흐름을 확인한다 | 20번, 21번, 22번, 23번 |
 
 ---
 
-# 1. 토요일 로드맵 기준 범위
+# 1. 오늘 작업을 사람 역할로 이해하기
 
-구현로드맵의 토요일 범위는 아래다.
+오늘은 서버가 여러 개라서 헷갈린다.
 
-```text
-6.1 오전: AI 서버 기본 연결
-6.2 오후: 이전 기록 조회 붙이기
-6.3 저녁: AI 분석 응답 화면 연결
-```
-
-즉 오늘 완료 기준은 이것이다.
-
-```text
-게시글 상세 화면에서 AI 분석 버튼 클릭
--> 요약 표시
--> 다음 운동 목표 표시
-```
-
-오늘은 AI 응답이 아주 똑똑할 필요는 없다.
-
-먼저 중요한 것은:
+그래서 사람 역할로 나누면 쉽다.
 
 ```text
 React
--> NestJS
--> FastAPI
--> NestJS
--> React
+-> 사용자와 직접 만나는 직원
+
+NestJS
+-> 로그인 확인하고 DB를 보는 매니저
+
+FastAPI
+-> 운동 기록을 분석하는 AI 담당자
 ```
 
-이 왕복 흐름이 실제로 되는 것이다.
+게시글 상세 화면에서 사용자가 `AI 분석` 버튼을 누르면 이렇게 움직인다.
+
+```text
+사용자:
+이 운동 기록 분석해줘.
+
+React:
+NestJS야, 이 게시글 분석해줘.
+
+NestJS:
+잠깐. 이 사용자 로그인했나?
+이 글 작성자가 맞나?
+DB에서 현재 글이랑 이전 기록 좀 찾아볼게.
+FastAPI야, 이 운동 기록 분석해줘.
+
+FastAPI:
+요약과 다음 목표를 만들었어.
+
+NestJS:
+React야, 결과 여기 있어.
+
+React:
+화면에 보여줄게.
+```
+
+이 역할 분담을 알아야 뒤 코드가 덜 이상하게 보인다.
+
+이 1번 예열은 뒤의 작업과 이렇게 연결된다.
+
+| 역할 | 실제 파일 | 뒤에서 하는 번호 |
+| --- | --- | --- |
+| FastAPI, AI 담당자 | `ai-server/app/...` | 4번 ~ 8번 |
+| NestJS, 중간 매니저 | `backend/src/ai`, `backend/src/posts` | 9번 ~ 16번 |
+| React, 화면 직원 | `frontend/src/api`, `PostDetailPage.tsx` | 17번 ~ 19번 |
 
 ---
 
-# 2. 지금 상태
+# 2. 오늘 작업을 3층으로 나누기
 
-현재까지 된 것:
+오늘 작업은 한 번에 보면 복잡하다.
 
-```text
-회원가입
-로그인
-JWT accessToken 저장
-게시글 작성
-게시글 목록 조회
-게시글 상세 조회
-제목/운동명 검색
-```
-
-현재 AI 서버 상태:
+그래서 아래 3층으로 나눠서 보면 된다.
 
 ```text
-ai-server/app/main.py
-ai-server/app/routers/demo.py
-ai-server/app/schemas/message.py
-ai-server/app/services/message_service.py
+1층: FastAPI
+2층: NestJS
+3층: React
 ```
 
-현재 AI 서버에는 `/hello`, `/chat` 같은 데모 API가 있다.
+순서는 반드시 아래처럼 가는 게 좋다.
 
-토요일에는 이 데모 서버를 운동 기록 분석 서버로 확장한다.
+```text
+1. FastAPI 혼자 잘 되는지 확인
+2. NestJS가 FastAPI를 잘 부르는지 확인
+3. React가 NestJS 분석 API를 잘 부르는지 확인
+```
+
+왜 이 순서로 하냐면, 문제가 생겼을 때 원인을 찾기 쉽기 때문이다.
+
+예를 들어 React 버튼부터 만들면 이런 일이 생긴다.
+
+```text
+버튼 눌렀는데 안 됨
+```
+
+그러면 원인을 알 수 없다.
+
+```text
+React 문제인가?
+NestJS 문제인가?
+FastAPI 문제인가?
+DB 문제인가?
+token 문제인가?
+```
+
+그래서 아래처럼 한 층씩 확인한다.
+
+## 2.1 1층: FastAPI 단독 확인
+
+먼저 AI 서버 혼자 되는지 본다.
+
+연결되는 하위 단계:
+
+```text
+4번: FastAPI 요청/응답 스키마 만들기
+5번: FastAPI 분석 서비스 만들기
+6번: FastAPI 분석 라우터 만들기
+7번: FastAPI main.py 수정
+8번: FastAPI 실행과 테스트
+```
+
+성공 기준:
+
+```text
+curl http://localhost:8000/health
+curl -X POST http://localhost:8000/analysis/demo ...
+```
+
+이 두 개가 된다.
+
+## 2.2 2층: NestJS가 FastAPI 호출
+
+그 다음 NestJS가 FastAPI에게 분석 요청을 보내게 만든다.
+
+연결되는 하위 단계:
+
+```text
+9번: NestJS AI 타입 만들기
+10번: NestJS AiService 만들기
+11번: NestJS AiModule 만들기
+12번: PostsModule에 AiModule 연결
+13번: PostsService에 AI 분석 메서드 추가
+14번: PostsController에 분석 API 추가
+15번: 백엔드 환경변수 추가
+16번: NestJS 분석 API 테스트
+```
+
+성공 기준:
+
+```text
+curl -X POST http://localhost:3000/posts/1/analyze \
+  -H "Authorization: Bearer accessToken"
+```
+
+이 요청이 분석 결과를 돌려준다.
+
+## 2.3 3층: React 화면 연결
+
+마지막으로 브라우저 화면에 버튼을 붙인다.
+
+연결되는 하위 단계:
+
+```text
+17번: 프론트 분석 타입 만들기
+18번: 프론트 posts API에 analyzePost 추가
+19번: 게시글 상세 화면에 AI 분석 버튼 추가
+```
+
+성공 기준:
+
+```text
+게시글 상세 화면
+-> AI 분석 버튼 클릭
+-> 분석 중 표시
+-> 요약/추천/다음 목표 표시
+```
+
+마지막 확인은:
+
+```text
+20번: 오늘 테스트 흐름
+21번: 자주 터지는 문제
+22번: 오늘 마감 체크
+23번: 오늘 완료 기준
+```
+
+여기서 한다.
 
 ---
 
-# 3. 오늘 만들 파일 구조
+# 3. 오늘 만들 파일을 미리 보는 이유
 
-## 3.1 AI Server
+이제 파일 구조를 본다.
+
+여기서 중요한 것은 파일명을 외우는 게 아니다.
+
+중요한 건:
+
+```text
+어느 파일이 어느 층에 속하는지
+```
+
+를 아는 것이다.
+
+## 3.1 1층 FastAPI 파일
 
 ```text
 ai-server/app/
+  schemas/analysis.py
+  services/analysis_service.py
+  routers/analysis.py
   main.py
-  routers/
-    analysis.py
-  schemas/
-    analysis.py
-  services/
-    analysis_service.py
 ```
 
-역할:
+이 파일들은 FastAPI AI 서버 쪽이다.
 
-| 파일 | 역할 |
-| --- | --- |
-| `schemas/analysis.py` | FastAPI가 받을 요청/응답 데이터 형식 |
-| `services/analysis_service.py` | 운동 기록을 분석하는 실제 로직 |
-| `routers/analysis.py` | `/analysis/demo` API 주소 정의 |
-| `main.py` | FastAPI 앱에 router 등록 |
+| 파일 | 쉬운 뜻 | 실제 구현 번호 |
+| --- | --- | --- |
+| `schemas/analysis.py` | FastAPI가 받을 데이터 모양 | 4번 |
+| `services/analysis_service.py` | 임시 분석 결과 만드는 곳 | 5번 |
+| `routers/analysis.py` | `/analysis/demo` 주소 여는 곳 | 6번 |
+| `main.py` | router와 `/health` 등록하는 곳 | 7번 |
 
-## 3.2 Backend
+테스트는 8번에서 한다.
+
+## 3.2 2층 NestJS 파일
 
 ```text
 backend/src/
   ai/
-    ai.module.ts
-    ai.service.ts
     types.ts
+    ai.service.ts
+    ai.module.ts
   posts/
-    posts.controller.ts
-    posts.service.ts
     posts.module.ts
+    posts.service.ts
+    posts.controller.ts
 ```
 
-역할:
+이 파일들은 NestJS 백엔드 쪽이다.
 
-| 파일 | 역할 |
-| --- | --- |
-| `ai.service.ts` | NestJS에서 FastAPI를 호출하는 작업자 |
-| `ai.module.ts` | AiService를 NestJS에 등록하는 모듈 |
-| `types.ts` | AI 서버에 보낼 데이터와 받을 데이터 타입 |
-| `posts.controller.ts` | `POST /posts/:id/analyze` 주소 추가 |
-| `posts.service.ts` | 현재 게시글과 이전 기록 조회 후 AiService 호출 |
-| `posts.module.ts` | PostsService가 AiService를 쓸 수 있게 AiModule import |
+| 파일 | 쉬운 뜻 | 실제 구현 번호 |
+| --- | --- | --- |
+| `ai/types.ts` | FastAPI와 주고받을 데이터 타입 | 9번 |
+| `ai/ai.service.ts` | FastAPI로 fetch 보내는 곳 | 10번 |
+| `ai/ai.module.ts` | AiService를 NestJS에 등록 | 11번 |
+| `posts.module.ts` | Posts 쪽에서 AiService 쓰게 연결 | 12번 |
+| `posts.service.ts` | 현재 글/이전 기록 찾고 분석 요청 | 13번 |
+| `posts.controller.ts` | `POST /posts/:id/analyze` 주소 열기 | 14번 |
 
-## 3.3 Frontend
+환경변수는 15번, 테스트는 16번에서 한다.
+
+## 3.3 3층 React 파일
 
 ```text
 frontend/src/
-  api/
-    posts.ts
-  types/
-    analysis.ts
-  pages/
-    PostDetailPage.tsx
+  types/analysis.ts
+  api/posts.ts
+  pages/PostDetailPage.tsx
 ```
 
-역할:
+이 파일들은 React 화면 쪽이다.
 
-| 파일 | 역할 |
-| --- | --- |
-| `types/analysis.ts` | 분석 결과 타입 |
-| `api/posts.ts` | `analyzePost()` API 함수 추가 |
-| `PostDetailPage.tsx` | AI 분석 버튼과 결과 화면 추가 |
+| 파일 | 쉬운 뜻 | 실제 구현 번호 |
+| --- | --- | --- |
+| `types/analysis.ts` | 화면에서 받을 분석 결과 타입 | 17번 |
+| `api/posts.ts` | React가 NestJS 분석 API 호출 | 18번 |
+| `PostDetailPage.tsx` | 버튼과 결과 표시 UI | 19번 |
+
+브라우저 확인은 20번부터 한다.
+
+## 3.4 오늘 전체 지도
+
+오늘 문서는 아래 순서로 읽으면 된다.
+
+```text
+0번 ~ 3번
+-> 구현 전에 오늘 할 일을 이해하는 예열
+
+4번 ~ 8번
+-> FastAPI AI 서버 만들기
+
+9번 ~ 16번
+-> NestJS에서 AI 서버 호출하기
+
+17번 ~ 19번
+-> React 화면에 분석 버튼 붙이기
+
+20번 ~ 23번
+-> 실행, 테스트, 오류 확인, 완료 체크
+```
+
+그러니까 지금 0~3에서 모든 걸 이해하려고 하면 안 된다.
+
+0~3은 그냥 이렇게 생각하면 된다.
+
+```text
+아, 오늘은 3층짜리 연결 작업이구나.
+1층 FastAPI부터 만들고,
+2층 NestJS가 그걸 부르게 하고,
+3층 React에서 버튼으로 연결하는구나.
+```
+
+이 정도면 충분하다.
 
 ---
 
