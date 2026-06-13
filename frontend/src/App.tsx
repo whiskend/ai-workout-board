@@ -5,6 +5,7 @@ import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import NotFoundPage from './pages/NotFoundPage';
 import PostCreatePage from './pages/PostCreatePage';
+import PostDetailPage from './pages/PostDetailPage';
 import PostListPage from './pages/PostListPage';
 import SignupPage from './pages/SignupPage';
 import UserPage from './pages/UserPage';

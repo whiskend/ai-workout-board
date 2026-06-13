@@ -1,4 +1,5 @@
-import { FormEvent, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import type { FormEvent } from 'react';
 import { Link } from 'react-router';
 import { getPosts } from '../api/posts';
 import type { Post } from '../types/post';
