@@ -5,7 +5,7 @@ export class AppController {
   @Get()
   getRoot() {
     return {
-      message: 'Workout board backend is running',
+      message: 'Post board backend is running',
     };
   }
 

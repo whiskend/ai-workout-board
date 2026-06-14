@@ -1,8 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { CreateWorkoutPostDto } from './dto/create-workout-post.dto';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { CreatePostDto } from './dto/create-post.dto';
 import { PrismaService } from '../prisma/prisma.service';
+import { UpdatePostDto } from './dto/update-post.dto';
 
-const workoutPostInclude = {
+const postInclude = {
   author: {
     select: {
       id: true,
@@ -28,32 +29,16 @@ const workoutPostInclude = {
 export class PostsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  private async getDemoUser() {
-    return this.prisma.user.upsert({
-      where: {
-        email: 'demo@workout.local',
-      },
-      update: {},
-      create: {
-        email: 'demo@workout.local',
-        nickname: '데모 사용자',
-        passwordHash: 'not-used-yet',
-      },
-    });
-  }
-
-  async create(createWorkoutPostDto: CreateWorkoutPostDto) {
-    const author = await this.getDemoUser();
-
-    return this.prisma.workoutPost.create({
+  async create(userId: number, createPostDto: CreatePostDto) {
+    return this.prisma.post.create({
       data: {
-        authorId: author.id,
-        title: createWorkoutPostDto.title,
-        workoutDate: new Date(createWorkoutPostDto.workoutDate),
-        bodyPart: createWorkoutPostDto.bodyPart,
-        memo: createWorkoutPostDto.memo,
+        authorId: userId,
+        title: createPostDto.title,
+        date: new Date(createPostDto.date),
+        bodyPart: createPostDto.bodyPart,
+        memo: createPostDto.memo,
         exercises: {
-          create: createWorkoutPostDto.exercises.map((exercise, index) => ({
+          create: createPostDto.exercises.map((exercise, index) => ({
             exerciseName: exercise.exerciseName,
             normalizedName: exercise.exerciseName.trim().toLowerCase(),
             weightKg: exercise.weightKg,
@@ -70,25 +55,58 @@ export class PostsService {
           })),
         },
       },
-      include: workoutPostInclude,
+      include: postInclude,
     });
   }
 
-  async findAll() {
-    return this.prisma.workoutPost.findMany({
+  async findAll(keyword?: string) {
+    const trimmedKeyword = keyword?.trim();
+
+    return this.prisma.post.findMany({
+      where: trimmedKeyword
+        ? {
+            OR: [
+              {
+                title: {
+                  contains: trimmedKeyword,
+                  mode: 'insensitive',
+                },
+              },
+              {
+                exercises: {
+                  some: {
+                    exerciseName: {
+                      contains: trimmedKeyword,
+                      mode: 'insensitive',
+                    },
+                  },
+                },
+              },
+              {
+                exercises: {
+                  some: {
+                    normalizedName: {
+                      contains: trimmedKeyword.toLowerCase(),
+                    },
+                  },
+                },
+              },
+            ],
+          }
+        : undefined,
       orderBy: {
         createdAt: 'desc',
       },
-      include: workoutPostInclude,
+      include: postInclude,
     });
   }
 
   async findOne(id: number) {
-    const post = await this.prisma.workoutPost.findUnique({
+    const post = await this.prisma.post.findUnique({
       where: {
         id,
       },
-      include: workoutPostInclude,
+      include: postInclude,
     });
 
     if (!post) {
@@ -96,5 +114,78 @@ export class PostsService {
     }
 
     return post;
+  }
+
+  async update(userId: number, id: number, updatePostDto: UpdatePostDto) {
+    const post = await this.prisma.post.findUnique({
+      where: { id },
+    });
+
+    if (!post) {
+      throw new NotFoundException('게시글을 찾을 수 없습니다.');
+    }
+
+    if (post.authorId !== userId) {
+      throw new ForbiddenException('게시글을 수정할 권한이 없습니다.');
+    }
+
+    if (updatePostDto.exercises) {
+      await this.prisma.exercise.deleteMany({
+        where: { postId: id },
+      });
+    }
+
+    return this.prisma.post.update({
+      where: { id },
+      data: {
+        title: updatePostDto.title,
+        date: updatePostDto.date ? new Date(updatePostDto.date) : undefined,
+        bodyPart: updatePostDto.bodyPart,
+        memo: updatePostDto.memo,
+        exercises: updatePostDto.exercises
+          ? {
+              create: updatePostDto.exercises.map((exercise, index) => ({
+                exerciseName: exercise.exerciseName,
+                normalizedName: exercise.exerciseName.trim().toLowerCase(),
+                weightKg: exercise.weightKg,
+                targetReps: exercise.targetReps,
+                orderIndex: exercise.orderIndex ?? index,
+                memo: exercise.memo,
+                sets: {
+                  create: exercise.sets.map((set) => ({
+                    setNumber: set.setNumber,
+                    reps: set.reps,
+                    perceivedDifficulty: set.perceivedDifficulty,
+                  })),
+                },
+              })),
+            }
+          : undefined,
+      },
+      include: postInclude,
+    });
+  }
+
+  async remove(userId: number, id: number) {
+    const post = await this.prisma.post.findUnique({
+      where: { id },
+    });
+
+    if (!post) {
+      throw new NotFoundException('게시글을 찾을 수 없습니다.');
+    }
+
+    if (post.authorId !== userId) {
+      throw new ForbiddenException('게시글을 삭제할 권한이 없습니다.');
+    }
+
+    await this.prisma.post.delete({
+      where: { id },
+    });
+
+    return {
+      deleted: true,
+      id,
+    };
   }
 }
