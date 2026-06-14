@@ -19,21 +19,23 @@ Codex는 대신 결정하는 사람이 아니라,
 
 ## 1. 작업 전 반드시 읽을 문서
 
-작업을 시작하기 전에 아래 문서를 순서대로 확인한다.
+작업을 시작하기 전에 기본 문서를 먼저 확인한다.
 
 ```text
 1. AGENTS.md
-2. docs/00-how-to-use.md
-3. docs/01-current-state.md
-4. docs/02-product-planning.md
-5. docs/03-domain-design.md
-6. docs/04-architecture.md
-7. docs/05-api-design.md
-8. docs/06-database-design.md
-9. docs/07-ai-rag-design.md
-10. docs/08-codex-workflow.md
-11. docs/09-review-test-checklist.md
-12. README.md
+2. docs/01-current-state.md
+```
+
+작업 성격에 따라 아래 문서를 추가로 읽는다.
+
+```text
+프로젝트 사용법 확인: docs/00-how-to-use.md
+기획/도메인 작업: docs/02-product-planning.md, docs/03-domain-design.md
+아키텍처/API/DB 작업: docs/04-architecture.md, docs/05-api-design.md, docs/06-database-design.md
+AI/RAG/MCP/Agent 작업: docs/07-ai-rag-design.md
+Codex 작업 방식 확인: docs/08-codex-workflow.md
+테스트/리뷰 작업: docs/09-review-test-checklist.md
+발표/최종 문서 작업: README.md
 ```
 
 작업이 특정 영역에만 해당되더라도 `AGENTS.md`와 `docs/01-current-state.md`는 반드시 먼저 읽는다.
@@ -52,6 +54,16 @@ React
 -> PostgreSQL
 ```
 
+AI 서버 관련 기본 파일은 존재하지만, 현재 코드 기준으로 전체 AI 분석 연결은 아직 미완료 상태다.
+
+```text
+FastAPI /health
+FastAPI /analysis/demo
+NestJS backend/src/ai/*
+```
+
+다음 흐름은 아직 다시 연결해야 한다.
+
 ```text
 React 상세 화면
 -> NestJS POST /posts/:id/analyze
@@ -62,9 +74,7 @@ React 상세 화면
 -> React가 화면에 표시
 ```
 
-즉, 현재 AI 분석의 지능은 demo 수준이지만 **React -> NestJS -> FastAPI -> NestJS -> React 연결은 성공한 상태**다.
-
-Codex는 이 동작하는 구조를 임의로 갈아엎으면 안 된다.
+Codex는 현재 동작하는 게시판/인증 구조를 임의로 갈아엎으면 안 된다.
 
 ---
 
@@ -509,9 +519,21 @@ python -m py_compile app/main.py app/routers/analysis.py app/schemas/analysis.py
 
 ## 13. 첫 번째 추천 작업
 
-현재 프로젝트의 다음 추천 작업은 **RAG 최소 구현 정리**다.
+현재 프로젝트의 다음 추천 작업은 **게시글 AI 분석 연결 재구현**이다.
 
-목표는 완성형 벡터 RAG가 아니라 다음 흐름을 코드와 README에서 명확히 보여주는 것이다.
+목표는 먼저 아래 흐름을 다시 실제 코드로 연결하는 것이다.
+
+```text
+React 상세 화면
+-> NestJS POST /posts/:id/analyze
+-> NestJS가 현재 게시글과 이전 기록 조회
+-> NestJS가 FastAPI /analysis/demo 호출
+-> React가 분석 결과 표시
+```
+
+이 흐름이 다시 동작한 뒤에 **RAG 최소 구현 정리**로 넘어간다.
+
+RAG의 목표는 완성형 벡터 RAG가 아니라 다음 흐름을 코드와 README에서 명확히 보여주는 것이다.
 
 ```text
 로그인한 사용자

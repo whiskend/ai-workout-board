@@ -30,7 +30,15 @@ React
 -> PostgreSQL
 ```
 
-AI 분석 기능은 다음 흐름으로 동작한다.
+AI 서버 관련 기본 구조는 존재한다.
+
+```text
+FastAPI /health
+FastAPI /analysis/demo
+NestJS backend/src/ai/*
+```
+
+하지만 현재 코드 기준으로 아래 전체 연결은 아직 미완료 상태다.
 
 ```text
 React 상세 화면
@@ -106,8 +114,11 @@ AI 분석 요청은 반드시 NestJS를 거쳐야 한다.
 - FastAPI `/health`
 - FastAPI `/analysis/demo`
 - NestJS `AiService`
+
+아직 미완료인 AI 연결:
+
 - NestJS `POST /posts/:id/analyze`
-- React 게시글 상세 화면의 AI 분석 버튼
+- 게시글 상세 화면의 AI 분석 버튼
 - AI 분석 결과 화면 표시
 
 ---
@@ -120,10 +131,9 @@ AI 분석 요청은 반드시 NestJS를 거쳐야 한다.
 backend npm run build 통과
 frontend npm run build 통과
 FastAPI Python 문법 확인 통과
-통합 테스트 성공
 ```
 
-통합 테스트 흐름:
+아직 현재 코드 기준으로 완료되었다고 말하면 안 되는 통합 흐름:
 
 ```text
 AI 서버 health OK
@@ -135,9 +145,9 @@ POST /posts/:id/analyze OK
 AI 분석 결과 응답 OK
 ```
 
-이 흐름이 현재 프로젝트의 중요한 기준선이다.
+위 흐름은 다음 작업에서 다시 연결하고 검증해야 하는 목표다.
 
-Codex는 새 기능을 구현한 뒤 이 기준선이 깨지지 않았는지 확인해야 한다.
+Codex는 새 기능을 구현한 뒤 기존 게시판/인증 기준선이 깨지지 않았는지 확인해야 한다.
 
 ---
 
@@ -223,7 +233,6 @@ GET /posts?keyword=벤치프레스
 GET /posts/:id
 PATCH /posts/:id
 DELETE /posts/:id
-POST /posts/:id/analyze
 ```
 
 보호 API:
@@ -232,7 +241,6 @@ POST /posts/:id/analyze
 POST /posts
 PATCH /posts/:id
 DELETE /posts/:id
-POST /posts/:id/analyze
 ```
 
 공개 API:
@@ -248,9 +256,11 @@ GET /posts/:id
 
 현재 AI 분석은 GPT를 직접 호출하지 않는다.
 
-FastAPI에서 임시 분석 결과를 만들어 반환한다.
+FastAPI에서 임시 분석 결과를 만드는 `/analysis/demo`는 존재한다.
 
-흐름:
+하지만 React 상세 화면에서 버튼을 눌러 NestJS를 거쳐 FastAPI까지 호출하는 전체 흐름은 아직 미완료 상태다.
+
+목표 흐름:
 
 ```text
 1. React 상세 화면에서 AI 분석 버튼 클릭
@@ -265,7 +275,7 @@ FastAPI에서 임시 분석 결과를 만들어 반환한다.
 10. React가 결과 표시
 ```
 
-현재 응답 예시:
+FastAPI demo 응답 예시:
 
 ```json
 {
@@ -316,7 +326,6 @@ frontend/src/api/posts.ts
 
 frontend/src/types/auth.ts
 frontend/src/types/post.ts
-frontend/src/types/analysis.ts
 
 frontend/src/pages/SignupPage.tsx
 frontend/src/pages/LoginPage.tsx
@@ -356,19 +365,20 @@ docs/2026-06-13/토요일_AI서버분석_학습문서.md
 따라서 현재 상태는 다음과 같이 표현한다.
 
 ```text
-AI 분석 호출 구조는 연결되었지만, 실제 LLM 기반 분석은 아직 demo 단계다.
+FastAPI demo 분석 API와 NestJS AiService 기본 구조는 있지만,
+게시글 상세 화면에서 AI 분석 버튼을 눌러 전체 흐름을 실행하는 연결은 아직 미완료다.
 ```
 
 ---
 
 ### RAG
 
-현재는 이전 기록을 조회해 FastAPI로 보내는 구조가 있다.
+현재는 이전 기록을 조회해 FastAPI로 보내는 전체 API 흐름이 아직 연결되지 않았다.
 
-발표에서는 다음 정도로 표현하는 것이 안전하다.
+다음 작업에서 아래 구조를 최소 구현 목표로 삼는다.
 
 ```text
-로그인한 사용자 + 같은 운동명 + 최근 기록 N개를 AI 분석 재료로 사용하는 구조화 검색 기반 RAG 흐름을 설계/최소 구현했다.
+로그인한 사용자 + 같은 운동명 + 최근 기록 N개를 AI 분석 재료로 사용하는 구조화 검색 기반 RAG 흐름을 설계한다.
 ```
 
 pgvector는 아직 필수 구현이 아니다.
@@ -413,11 +423,12 @@ bench press
 우선순위는 다음과 같다.
 
 ```text
-1. RAG 최소 구현 정리
-2. OpenAI API 연결
-3. 운동명 정규화 tool 구현
-4. Agent workflow 정리
-5. README / 발표자료 / 데모 안정화
+1. 게시글 AI 분석 연결 재구현
+2. RAG 최소 구현 정리
+3. OpenAI API 연결
+4. 운동명 정규화 tool 구현
+5. Agent workflow 정리
+6. README / 발표자료 / 데모 안정화
 ```
 
 ---
@@ -438,7 +449,7 @@ AI 분석은 반드시 NestJS를 거쳐야 한다.
 
 ### 2. 작성자 검사를 유지해야 한다
 
-`POST /posts/:id/analyze`는 로그인한 사용자만 호출할 수 있고, 작성자 본인의 게시글만 분석할 수 있어야 한다.
+`POST /posts/:id/analyze`를 구현할 때는 로그인한 사용자만 호출할 수 있고, 작성자 본인의 게시글만 분석할 수 있어야 한다.
 
 ---
 
@@ -459,6 +470,6 @@ Prisma schema 변경은 migration이 필요하다.
 ## 13. 현재 상태 한 줄 정리
 
 ```text
-게시판과 인증, React-NestJS-FastAPI 연결은 성공했다.
-이제 남은 핵심은 AI 분석을 더 똑똑하게 만들고, RAG/MCP/Agent 흐름을 과장 없이 설계·문서화하는 것이다.
+게시판과 인증, FastAPI demo 분석 API, NestJS AiService 기본 구조는 준비되어 있다.
+이제 남은 첫 핵심은 React 상세 화면 -> NestJS -> FastAPI -> React로 이어지는 AI 분석 연결을 다시 완성하는 것이다.
 ```
