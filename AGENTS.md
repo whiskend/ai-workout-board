@@ -54,15 +54,7 @@ React
 -> PostgreSQL
 ```
 
-AI 서버 관련 기본 파일은 존재하지만, 현재 코드 기준으로 전체 AI 분석 연결은 아직 미완료 상태다.
-
-```text
-FastAPI /health
-FastAPI /analysis/demo
-NestJS backend/src/ai/*
-```
-
-다음 흐름은 아직 다시 연결해야 한다.
+AI 분석 기능은 현재 demo 수준으로 연결되어 있다.
 
 ```text
 React 상세 화면
@@ -74,7 +66,9 @@ React 상세 화면
 -> React가 화면에 표시
 ```
 
-Codex는 현재 동작하는 게시판/인증 구조를 임의로 갈아엎으면 안 된다.
+즉, 현재 AI 분석의 지능은 demo 수준이지만 **React -> NestJS -> FastAPI -> NestJS -> React 연결은 성공한 상태**다.
+
+Codex는 현재 동작하는 게시판/인증/AI 연결 구조를 임의로 갈아엎으면 안 된다.
 
 ---
 
@@ -519,19 +513,7 @@ python -m py_compile app/main.py app/routers/analysis.py app/schemas/analysis.py
 
 ## 13. 첫 번째 추천 작업
 
-현재 프로젝트의 다음 추천 작업은 **게시글 AI 분석 연결 재구현**이다.
-
-목표는 먼저 아래 흐름을 다시 실제 코드로 연결하는 것이다.
-
-```text
-React 상세 화면
--> NestJS POST /posts/:id/analyze
--> NestJS가 현재 게시글과 이전 기록 조회
--> NestJS가 FastAPI /analysis/demo 호출
--> React가 분석 결과 표시
-```
-
-이 흐름이 다시 동작한 뒤에 **RAG 최소 구현 정리**로 넘어간다.
+현재 프로젝트의 다음 추천 작업은 **RAG 최소 구현 정리**다.
 
 RAG의 목표는 완성형 벡터 RAG가 아니라 다음 흐름을 코드와 README에서 명확히 보여주는 것이다.
 

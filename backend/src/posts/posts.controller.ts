@@ -66,4 +66,13 @@ export class PostsController {
   ) {
     return this.postsService.remove(request.user.id, id);
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/analyze')
+  analyze(
+    @Req() request: AuthenticatedRequest,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return this.postsService.analyze(request.user.id, id);
+  }
 }
