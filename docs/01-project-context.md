@@ -66,7 +66,8 @@ AI / External:
 - FastAPI
 - Python
 - Pydantic BaseModel
-- 현재는 demo analysis 단계
+- OpenAI Responses API 호출 시도
+- OpenAI API 키가 없거나 호출 실패 시 rule-based fallback
 
 Infra:
 - Docker Compose
@@ -99,14 +100,16 @@ Infra:
 - FastAPI /analysis/demo
 - NestJS GET /ai/health
 - NestJS POST /posts/:id/analyze
-- NestJS -> FastAPI demo 분석 연결
+- NestJS -> FastAPI AI 분석 연결
+- 같은 사용자 + 같은 운동명 + 과거 날짜 + 최근 3개 기준 이전 기록 조회
+- 이전 기록 기반 구조화 검색 RAG
+- AI 분석 결과 화면 표시
+- AI 분석 결과의 참고 기록과 분석 근거 화면 표시
 
 진행 중:
-- #8 FastAPI AI 서버 기본 세팅 브랜치 마무리
+- #9 AI 운동 기록 분석 기능과 #10 RAG 최소 구현 브랜치 PR 준비
 
 예정:
-- OpenAI API 연결
-- RAG 최소 구현 정리
 - MCP tool 구현
 - Agent workflow 구현
 - 댓글, 태그, 페이징 보강
@@ -163,8 +166,10 @@ Database:
 - 세트 기록 저장
 
 External / AI:
-- FastAPI가 demo 분석 결과 생성
-- 현재는 OpenAI API를 직접 호출하지 않음
+- FastAPI가 현재 기록과 이전 기록을 받아 분석 결과 생성
+- OpenAI API 키가 있으면 OpenAI Responses API 호출 시도
+- OpenAI API 키가 없거나 호출 실패 시 rule-based 분석으로 fallback
+- 분석 결과는 DB에 저장하지 않고 화면에만 표시
 ```
 
 중요 원칙:
@@ -218,6 +223,7 @@ ai-workout-board/
 - backend/src/ai/ai.service.ts
 - ai-server/app/routers/internal.py
 - ai-server/app/routers/analysis.py
+- ai-server/app/services/analysis_service.py
 - frontend/src/api/posts.ts
 - frontend/src/pages/PostDetailPage.tsx
 ```
@@ -393,6 +399,8 @@ curl http://localhost:3000/ai/health
 ```text
 - 2026-06-15 AI 분석 결과는 DB에 저장하지 않고 화면에만 표시한다.
 - 2026-06-15 React는 FastAPI를 직접 호출하지 않고 NestJS를 거친다.
+- 2026-06-15 #9 AI 분석과 #10 RAG 최소 구현은 한 브랜치에서 함께 진행한다.
+- 2026-06-15 OpenAI 호출이 불가능하면 rule-based 분석으로 fallback한다.
 ```
 
 자세한 결정 기록은 `docs/08-decision-log.md`에 남긴다.
