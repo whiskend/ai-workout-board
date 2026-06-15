@@ -1,4 +1,7 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
+import { AiService } from '../ai/ai.service';
+import type { AiPostRecord } from '../ai/types';
 import { CreatePostDto } from './dto/create-post.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdatePostDto } from './dto/update-post.dto';
@@ -23,11 +26,38 @@ const postInclude = {
       },
     },
   },
-};
+} satisfies Prisma.PostInclude;
+
+type PostWithRelations = Prisma.PostGetPayload<{
+  include: typeof postInclude;
+}>;
+
+function toAiPostRecord(post: PostWithRelations): AiPostRecord {
+  return {
+    id: post.id,
+    title: post.title,
+    date: post.date.toISOString().slice(0, 10),
+    bodyPart: post.bodyPart,
+    memo: post.memo,
+    exercises: post.exercises.map((exercise) => ({
+      exerciseName: exercise.exerciseName,
+      weightKg: exercise.weightKg,
+      targetReps: exercise.targetReps,
+      sets: exercise.sets.map((set) => ({
+        setNumber: set.setNumber,
+        reps: set.reps,
+        perceivedDifficulty: set.perceivedDifficulty,
+      })),
+    })),
+  };
+}
 
 @Injectable()
 export class PostsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly aiService: AiService,
+  ) {}
 
   async create(userId: number, createPostDto: CreatePostDto) {
     return this.prisma.post.create({
@@ -187,5 +217,55 @@ export class PostsService {
       deleted: true,
       id,
     };
+  }
+
+  async analyze(userId: number, id: number) {
+    const currentPost = await this.prisma.post.findUnique({
+      where: { id },
+      include: postInclude,
+    });
+
+    if (!currentPost) {
+      throw new NotFoundException('게시글을 찾을 수 없습니다.');
+    }
+
+    if (currentPost.authorId !== userId) {
+      throw new ForbiddenException('게시글을 분석할 권한이 없습니다.');
+    }
+
+    const normalizedNames = currentPost.exercises
+      .map((exercise) => exercise.normalizedName)
+      .filter((name): name is string => Boolean(name));
+
+    const previousPosts = normalizedNames.length
+      ? await this.prisma.post.findMany({
+          where: {
+            authorId: userId,
+            date: {
+              lt: currentPost.date,
+            },
+            id: {
+              not: id,
+            },
+            exercises: {
+              some: {
+                normalizedName: {
+                  in: normalizedNames,
+                },
+              },
+            },
+          },
+          orderBy: {
+            date: 'desc',
+          },
+          take: 3,
+          include: postInclude,
+        })
+      : [];
+
+    return this.aiService.analyzePost({
+      currentPost: toAiPostRecord(currentPost),
+      previousPosts: previousPosts.map(toAiPostRecord),
+    });
   }
 }

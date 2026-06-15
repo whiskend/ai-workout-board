@@ -1,14 +1,18 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router';
-import { getPost } from '../api/posts';
+import { analyzePost, getPost } from '../api/posts';
+import type { AnalysisResult } from '../types/analysis';
 import type { Post } from '../types/post';
 
 export default function PostDetailPage() {
   const params = useParams();
   const postId = Number(params.id);
   const [post, setPost] = useState<Post | null>(null);
+  const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState('');
+  const [analysisError, setAnalysisError] = useState('');
 
   useEffect(() => {
     async function loadPost() {
@@ -24,6 +28,22 @@ export default function PostDetailPage() {
 
     loadPost();
   }, [postId]);
+
+  async function handleAnalyze() {
+    setIsAnalyzing(true);
+    setAnalysisError('');
+
+    try {
+      const result = await analyzePost(postId);
+      setAnalysis(result);
+    } catch (error) {
+      setAnalysisError(
+        error instanceof Error ? error.message : 'AI 분석에 실패했습니다.',
+      );
+    } finally {
+      setIsAnalyzing(false);
+    }
+  }
 
   if (isLoading) {
     return <main>게시글을 불러오는 중입니다.</main>;
@@ -59,6 +79,30 @@ export default function PostDetailPage() {
             </ul>
           </article>
         ))}
+      </section>
+
+      <section>
+        <h2>AI 분석</h2>
+        <button type="button" onClick={handleAnalyze} disabled={isAnalyzing}>
+          {isAnalyzing ? '분석 중...' : 'AI 분석'}
+        </button>
+
+        {analysisError && <p>{analysisError}</p>}
+
+        {analysis && (
+          <article>
+            <h3>요약</h3>
+            <p>{analysis.summary}</p>
+
+            <h3>추천</h3>
+            <p>{analysis.recommendation}</p>
+
+            <h3>다음 목표</h3>
+            <p>{analysis.nextGoal}</p>
+
+            <p>참고한 이전 기록 수: {analysis.referencedPostCount}</p>
+          </article>
+        )}
       </section>
     </main>
   );

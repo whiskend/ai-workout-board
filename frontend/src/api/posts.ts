@@ -1,4 +1,5 @@
 import { apiRequest, getStoredToken } from './client';
+import type { AnalysisResult } from '../types/analysis';
 import type { CreatePostRequest, Post } from '../types/post';
 
 export function getPosts(keyword?: string) {
@@ -18,6 +19,13 @@ export function createPost(data: CreatePostRequest) {
   return apiRequest<Post>('/posts', {
     method: 'POST',
     body: data,
+    token: getStoredToken(),
+  });
+}
+
+export function analyzePost(id: number) {
+  return apiRequest<AnalysisResult>(`/posts/${id}/analyze`, {
+    method: 'POST',
     token: getStoredToken(),
   });
 }
