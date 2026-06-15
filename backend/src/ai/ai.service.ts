@@ -4,6 +4,7 @@ import type {
   AiHealthResponse,
   AnalyzePostRequest,
   AnalyzePostResponse,
+  NormalizeExercisesResponse,
 } from './types'; // FastAPI와 주고받을 데이터 타입을 가져온다.
 
 @Injectable() // AiService를 다른 클래스에 주입해서 쓸 수 있게 NestJS 관리 대상으로 등록한다.
@@ -58,5 +59,27 @@ export class AiService {
     }
 
     return response.json() as Promise<AnalyzePostResponse>; // FastAPI 응답 JSON을 분석 결과 타입으로 돌려준다.
+  }
+
+  async normalizeExerciseNames(
+    names: string[],
+  ): Promise<NormalizeExercisesResponse> {
+    const aiServerUrl = this.getAiServerUrl();
+
+    const response = await fetch(`${aiServerUrl}/analysis/tools/normalize-exercises`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Internal-Token': this.getInternalToken(),
+      },
+      body: JSON.stringify({ names }),
+    });
+
+    if (!response.ok) {
+      const message = await response.text();
+      throw new Error(message || '운동명 정규화 tool 호출에 실패했습니다.');
+    }
+
+    return response.json() as Promise<NormalizeExercisesResponse>;
   }
 }

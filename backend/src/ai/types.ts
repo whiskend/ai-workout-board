@@ -27,6 +27,22 @@ export type AnalyzePostRequest = {
   // NestJS가 FastAPI로 보낼 분석 요청 타입이다.
   currentPost: AiPostRecord; // 지금 분석할 현재 게시글이다.
   previousPosts: AiPostRecord[]; // 비교에 사용할 이전 게시글 목록이다.
+  toolCalls?: AiToolCallRecord[]; // 분석 전에 호출한 tool 기록이다.
+};
+
+export type AiToolCallRecord = {
+  toolName: string;
+  input: string;
+  output: string;
+  status: string;
+  source: string;
+};
+
+export type AiWorkflowStepRecord = {
+  step: number;
+  name: string;
+  status: string;
+  detail: string;
 };
 
 export type AnalyzePostResponse = {
@@ -43,6 +59,13 @@ export type AnalyzePostResponse = {
   }[];
   basis: string[];
   analysisMode: string;
+  toolCalls: AiToolCallRecord[];
+  workflowSteps: AiWorkflowStepRecord[];
+};
+
+export type NormalizeExercisesResponse = {
+  normalizedNames: string[];
+  toolCalls: AiToolCallRecord[];
 };
 
 export type AiHealthResponse = {

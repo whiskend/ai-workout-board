@@ -68,6 +68,8 @@ AI / External:
 - Pydantic BaseModel
 - OpenAI Responses API 호출 시도
 - OpenAI API 키가 없거나 호출 실패 시 rule-based fallback
+- FastAPI 내부 MCP-style 운동명 정규화 tool
+- 5단계 Agent workflow
 
 Infra:
 - Docker Compose
@@ -105,13 +107,14 @@ Infra:
 - 이전 기록 기반 구조화 검색 RAG
 - AI 분석 결과 화면 표시
 - AI 분석 결과의 참고 기록과 분석 근거 화면 표시
+- FastAPI 내부 운동명 정규화 tool endpoint
+- AI 분석 workflowSteps/toolCalls 응답
+- Agent workflow 기반 분석 흐름
 
 진행 중:
-- #9 AI 운동 기록 분석 기능과 #10 RAG 최소 구현 브랜치 PR 준비
+- #11 MCP tool과 #12 Agent workflow 브랜치 검증
 
 예정:
-- MCP tool 구현
-- Agent workflow 구현
 - 댓글, 태그, 페이징 보강
 - README와 발표 자료 정리
 ```
@@ -167,6 +170,8 @@ Database:
 
 External / AI:
 - FastAPI가 현재 기록과 이전 기록을 받아 분석 결과 생성
+- FastAPI 내부 MCP-style tool endpoint로 운동명 정규화
+- Agent workflow가 현재 기록 입력, 운동명 정규화, 이전 기록 검색 결과 수신, AI 분석 실행, 결과 반환 순서를 관리
 - OpenAI API 키가 있으면 OpenAI Responses API 호출 시도
 - OpenAI API 키가 없거나 호출 실패 시 rule-based 분석으로 fallback
 - 분석 결과는 DB에 저장하지 않고 화면에만 표시
