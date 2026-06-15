@@ -1,25 +1,40 @@
-from app.schemas.analysis import AnalysisRequest, AnalysisResponse  # 분석 요청과 응답 데이터 모양을 가져온다.
+from app.schemas.analysis import (
+    AnalysisRequest,
+    AnalysisResponse,
+)  # 분석 요청과 응답 데이터 모양을 가져온다.
 
 
-def _format_main_exercise_name(request: AnalysisRequest) -> str:  # 현재 게시글에서 대표 운동 이름을 뽑는다.
+def _format_main_exercise_name(
+    request: AnalysisRequest,
+) -> str:  # 현재 게시글에서 대표 운동 이름을 뽑는다.
     if not request.currentPost.exercises:
         return "운동"
 
     return request.currentPost.exercises[0].exerciseName
 
 
-def _format_sets(request: AnalysisRequest) -> str:  # 첫 번째 운동의 세트 반복 수를 8/8/7 같은 문자열로 만든다.
+def _format_sets(
+    request: AnalysisRequest,
+) -> str:  # 첫 번째 운동의 세트 반복 수를 8/8/7 같은 문자열로 만든다.
     if not request.currentPost.exercises:
         return "기록 없음"
 
-    first_exercise = request.currentPost.exercises[0]  # 분석 문장에 사용할 첫 번째 운동을 고른다.
-    reps = [str(set_record.reps) for set_record in first_exercise.sets]  # 각 세트의 반복 수만 문자열로 뽑는다.
+    first_exercise = request.currentPost.exercises[
+        0
+    ]  # 분석 문장에 사용할 첫 번째 운동을 고른다.
+    reps = [
+        str(set_record.reps) for set_record in first_exercise.sets
+    ]  # 각 세트의 반복 수만 문자열로 뽑는다.
 
     return "/".join(reps)  # 8, 8, 7을 8/8/7 모양으로 합친다.
 
 
-def make_demo_analysis(request: AnalysisRequest) -> AnalysisResponse:  # GPT 연결 전, 임시 AI 분석 결과를 만든다.
-    exercise_name = _format_main_exercise_name(request)  # 분석 문장에 넣을 대표 운동 이름이다.
+def make_demo_analysis(
+    request: AnalysisRequest,
+) -> AnalysisResponse:  # GPT 연결 전, 임시 AI 분석 결과를 만든다.
+    exercise_name = _format_main_exercise_name(
+        request
+    )  # 분석 문장에 넣을 대표 운동 이름이다.
     current_sets = _format_sets(request)  # 분석 문장에 넣을 현재 세트 기록이다.
     previous_count = len(request.previousPosts)  # 비교에 사용된 이전 기록 개수다.
 
