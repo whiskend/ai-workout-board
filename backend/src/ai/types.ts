@@ -35,6 +35,14 @@ export type AnalyzePostResponse = {
   recommendation: string; // 다음 운동 방향 추천이다.
   nextGoal: string; // 다음 운동 목표다.
   referencedPostCount: number; // 참고한 이전 기록 개수다.
+  referencedPosts: {
+    id: number;
+    title: string;
+    date: string;
+    matchedExercises: string[];
+  }[];
+  basis: string[];
+  analysisMode: string;
 };
 
 export type AiHealthResponse = {

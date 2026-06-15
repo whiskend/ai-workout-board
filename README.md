@@ -14,10 +14,10 @@
 | 주요 사용자 | 운동 기록을 남기며 성장감을 확인하고 싶은 운동 초보자 |
 | 핵심 기능 | 회원가입, 로그인, 운동 기록 게시글 CRUD, 검색, AI 분석 |
 | AI 분석 방식 | 현재 기록 + 이전 기록을 FastAPI로 전달해 분석 결과 반환 |
-| RAG 현재 수준 | 같은 사용자 + 같은 운동명 + 최근 기록 N개를 사용하는 구조화 검색 기반 RAG |
+| RAG 현재 수준 | 같은 사용자 + 같은 운동명 + 과거 날짜 + 최근 3개를 사용하는 구조화 검색 기반 RAG |
 | MCP 현재 수준 | 운동명 정규화 tool 후보 설계 |
 | Agent 현재 수준 | 정해진 단계를 수행하는 분석 workflow |
-| 현재 한계 | OpenAI API 연결 전 demo analysis 단계 |
+| 현재 한계 | pgvector 없는 구조화 검색 기반 RAG, OpenAI 실패 시 rule-based fallback |
 
 ---
 
@@ -51,10 +51,10 @@
 | Posts | 게시글 상세 | 완료 |
 | Posts | 게시글 수정/삭제 | 완료 |
 | Search | 제목 / 운동명 검색 | 완료 |
-| AI | FastAPI demo 분석 | 완료 |
+| AI | FastAPI 운동 기록 분석 | 완료 |
 | AI | 게시글 상세 화면 AI 분석 버튼 | 완료 |
-| AI | OpenAI 연결 | 예정 |
-| RAG | 최근 운동 기록 검색 | 최소 구현/정리 예정 |
+| AI | OpenAI Responses API 호출 시도 + fallback | 완료 |
+| RAG | 같은 사용자/같은 운동명/과거 날짜/최근 3개 검색 | 완료 |
 | MCP | 운동명 정규화 tool | 예정 |
 | Agent | 분석 workflow 정리 | 예정 |
 
@@ -286,14 +286,29 @@ Authorization: Bearer accessToken
 
 ## 10. AI 분석 응답 예시
 
-현재 FastAPI는 demo 분석 결과를 반환합니다.
+현재 FastAPI는 NestJS가 전달한 현재 기록과 이전 기록을 바탕으로 분석 결과를 반환합니다.
+`OPENAI_API_KEY`가 있으면 OpenAI Responses API 호출을 먼저 시도하고, 키가 없거나 호출에 실패하면 rule-based 분석으로 fallback합니다.
 
 ```json
 {
-  "summary": "AI 분석 테스트 가슴 운동 기록입니다. 벤치프레스 세트 기록은 8/8/7회입니다.",
-  "recommendation": "아직 비교할 이전 기록이 부족합니다. 오늘 기록을 기준점으로 저장해두고 다음 운동 때 같은 조건으로 한 번 더 기록해보세요.",
-  "nextGoal": "다음 운동에서는 벤치프레스의 목표 반복 수를 안정적으로 채우는 것을 우선하세요.",
-  "referencedPostCount": 0
+  "summary": "벤치프레스는 이전 60kg 8/7/6회에서 현재 60kg 8/8/7회로 기록됐습니다.",
+  "recommendation": "발전이 있으므로 바로 증량하기보다 현재 무게에서 반복 수를 먼저 채우는 것이 좋습니다.",
+  "nextGoal": "다음 운동에서는 벤치프레스를 60kg으로 유지하고 8/8/8에 가까워지는 것을 목표로 해보세요.",
+  "referencedPostCount": 1,
+  "referencedPosts": [
+    {
+      "id": 7,
+      "title": "이전 가슴 운동",
+      "date": "2026-06-01",
+      "matchedExercises": ["벤치프레스"]
+    }
+  ],
+  "basis": [
+    "같은 사용자 기록만 조회했습니다.",
+    "현재 게시글보다 과거 날짜의 기록만 비교했습니다.",
+    "같은 운동명 기록을 우선 비교했습니다."
+  ],
+  "analysisMode": "rule-based"
 }
 ```
 
@@ -308,7 +323,9 @@ Authorization: Bearer accessToken
 ```text
 로그인한 사용자
 + 같은 운동명
-+ 최근 기록 N개
++ 현재 게시글보다 과거 날짜
++ 현재 게시글 제외
++ 최근 3개
 -> AI 분석 재료로 사용
 ```
 
@@ -325,7 +342,7 @@ flowchart TD
 발표 표현:
 
 ```text
-현재는 pgvector 없이, 같은 사용자와 같은 운동명의 최근 기록을 조회해 AI 분석 재료로 사용하는 구조화 검색 기반 RAG 흐름을 설계했습니다.
+현재는 pgvector 없이, 같은 사용자와 같은 운동명의 과거 기록을 최근 3개까지 조회해 AI 분석 재료로 사용하는 구조화 검색 기반 RAG 흐름을 구현했습니다.
 ```
 
 ---
@@ -536,7 +553,7 @@ python -m py_compile app/main.py app/routers/analysis.py app/schemas/analysis.py
 
 | 한계 | 설명 | 개선 방향 |
 |---|---|---|
-| AI 분석이 demo 수준 | 현재는 GPT를 직접 호출하지 않음 | FastAPI `analysis_service.py`에 OpenAI API 연결 |
+| AI 분석 품질 한계 | OpenAI 실패 시 rule-based fallback으로 동작 | 프롬프트와 응답 검증 강화 |
 | RAG가 구조화 검색 수준 | pgvector 기반 semantic search는 아님 | 나중에 pgvector 확장 |
 | 운동명 흔들림 | 벤치/bench press/벤치프레스가 다르게 저장될 수 있음 | 운동명 정규화 tool 추가 |
 | Agent는 workflow 수준 | 완전 자율 에이전트는 아님 | 단계별 workflow를 명확히 구현/문서화 |
@@ -549,13 +566,12 @@ python -m py_compile app/main.py app/routers/analysis.py app/schemas/analysis.py
 우선순위:
 
 ```text
-1. RAG 최소 구현 정리
-2. OpenAI API 연결
-3. 운동명 정규화 tool 구현
-4. Agent workflow 정리
-5. README와 발표자료 안정화
-6. pgvector 기반 유사 기록 검색 확장
-7. 운동 성장 그래프 추가
+1. 운동명 정규화 tool 구현
+2. Agent workflow 정리
+3. 댓글, 태그, 페이징 보강
+4. README와 발표자료 안정화
+5. pgvector 기반 유사 기록 검색 확장
+6. 운동 성장 그래프 추가
 ```
 
 ---
@@ -569,6 +585,7 @@ React는 화면을 담당하고, NestJS는 인증과 게시글 API, DB 조회, F
 PostgreSQL에는 User, Post, Exercise, ExerciseSet 구조로 운동 기록이 저장됩니다.
 AI 분석은 React가 직접 FastAPI를 호출하지 않고, NestJS가 현재 기록과 이전 기록을 모아 FastAPI에 전달하는 구조입니다.
 
-현재 AI 분석은 demo 수준이지만, 같은 사용자와 같은 운동명의 최근 기록을 AI 분석 재료로 사용하는 구조화 검색 기반 RAG 흐름을 갖추고 있습니다.
+현재 AI 분석은 같은 사용자와 같은 운동명의 과거 기록을 AI 분석 재료로 사용하는 구조화 검색 기반 RAG 흐름을 갖추고 있습니다.
+OpenAI API 키가 있으면 OpenAI 분석을 시도하고, 없거나 실패하면 rule-based 분석으로 안전하게 fallback합니다.
 MCP는 운동명 정규화 tool 후보로 설계했고, Agent는 현재 게시글 조회, 운동명 정규화, 이전 기록 검색, AI 분석 요청, 다음 목표 추천의 정해진 workflow로 설명합니다.
 ```

@@ -100,7 +100,30 @@ export default function PostDetailPage() {
             <h3>다음 목표</h3>
             <p>{analysis.nextGoal}</p>
 
+            <h3>분석 근거</h3>
+            <ul>
+              {analysis.basis.map((basis) => (
+                <li key={basis}>{basis}</li>
+              ))}
+            </ul>
+
+            {analysis.referencedPosts.length > 0 && (
+              <>
+                <h3>참고한 이전 기록</h3>
+                <ul>
+                  {analysis.referencedPosts.map((referencedPost) => (
+                    <li key={referencedPost.id}>
+                      {referencedPost.date} - {referencedPost.title}
+                      {referencedPost.matchedExercises.length > 0 &&
+                        ` (${referencedPost.matchedExercises.join(', ')})`}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+
             <p>참고한 이전 기록 수: {analysis.referencedPostCount}</p>
+            <p>분석 모드: {analysis.analysisMode}</p>
           </article>
         )}
       </section>

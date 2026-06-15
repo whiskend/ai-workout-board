@@ -1,5 +1,5 @@
 from typing import Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class SetRecord(BaseModel):
@@ -26,7 +26,14 @@ class PostRecord(BaseModel):
 
 class AnalysisRequest(BaseModel):
     currentPost: PostRecord
-    previousPosts: list[PostRecord] = []
+    previousPosts: list[PostRecord] = Field(default_factory=list)
+
+
+class ReferencedPostRecord(BaseModel):
+    id: int
+    title: str
+    date: str
+    matchedExercises: list[str]
 
 
 class AnalysisResponse(BaseModel):
@@ -34,3 +41,6 @@ class AnalysisResponse(BaseModel):
     recommendation: str
     nextGoal: str
     referencedPostCount: int
+    referencedPosts: list[ReferencedPostRecord] = Field(default_factory=list)
+    basis: list[str] = Field(default_factory=list)
+    analysisMode: str = "rule-based"
