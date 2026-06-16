@@ -9,6 +9,7 @@ export default function PostCreatePage() {
   const [date, setDate] = useState('');
   const [bodyPart, setBodyPart] = useState('');
   const [memo, setMemo] = useState('');
+  const [tags, setTags] = useState('');
   const [exerciseName, setExerciseName] = useState('');
   const [weightKg, setWeightKg] = useState('');
   const [targetReps, setTargetReps] = useState('');
@@ -27,6 +28,10 @@ export default function PostCreatePage() {
         date,
         bodyPart,
         memo,
+        tags: tags
+          .split(',')
+          .map((tag) => tag.trim())
+          .filter(Boolean),
         exercises: [
           {
             exerciseName,
@@ -70,6 +75,15 @@ export default function PostCreatePage() {
         <label>
           메모
           <textarea value={memo} onChange={(event) => setMemo(event.target.value)} />
+        </label>
+
+        <label>
+          태그
+          <input
+            value={tags}
+            onChange={(event) => setTags(event.target.value)}
+            placeholder="가슴, 벤치프레스, 증량도전"
+          />
         </label>
 
         <label>

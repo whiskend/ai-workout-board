@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
+import type { FormEvent } from 'react';
 import { Link, useParams } from 'react-router';
-import { analyzePost, getPost } from '../api/posts';
+import { analyzePost, createComment, deleteComment, getPost } from '../api/posts';
 import type { AnalysisResult } from '../types/analysis';
 import type { Post } from '../types/post';
 
@@ -11,8 +12,10 @@ export default function PostDetailPage() {
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [commentContent, setCommentContent] = useState('');
   const [error, setError] = useState('');
   const [analysisError, setAnalysisError] = useState('');
+  const [commentError, setCommentError] = useState('');
 
   useEffect(() => {
     async function loadPost() {
@@ -45,6 +48,53 @@ export default function PostDetailPage() {
     }
   }
 
+  async function handleCreateComment(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setCommentError('');
+
+    try {
+      const comment = await createComment(postId, {
+        content: commentContent,
+      });
+
+      setPost((currentPost) =>
+        currentPost
+          ? {
+              ...currentPost,
+              comments: [...currentPost.comments, comment],
+            }
+          : currentPost,
+      );
+      setCommentContent('');
+    } catch (error) {
+      setCommentError(
+        error instanceof Error ? error.message : '댓글 작성에 실패했습니다.',
+      );
+    }
+  }
+
+  async function handleDeleteComment(commentId: number) {
+    setCommentError('');
+
+    try {
+      await deleteComment(postId, commentId);
+      setPost((currentPost) =>
+        currentPost
+          ? {
+              ...currentPost,
+              comments: currentPost.comments.filter(
+                (comment) => comment.id !== commentId,
+              ),
+            }
+          : currentPost,
+      );
+    } catch (error) {
+      setCommentError(
+        error instanceof Error ? error.message : '댓글 삭제에 실패했습니다.',
+      );
+    }
+  }
+
   if (isLoading) {
     return <main>게시글을 불러오는 중입니다.</main>;
   }
@@ -61,6 +111,14 @@ export default function PostDetailPage() {
       <p>운동 날짜: {new Date(post.date).toLocaleDateString()}</p>
       <p>운동 부위: {post.bodyPart}</p>
       {post.memo && <p>메모: {post.memo}</p>}
+      {post.postTags.length > 0 && (
+        <p>
+          태그:{' '}
+          {post.postTags.map((postTag) => (
+            <span key={postTag.tagId}>#{postTag.tag.name} </span>
+          ))}
+        </p>
+      )}
 
       <section>
         <h2>운동 기록</h2>
@@ -79,6 +137,43 @@ export default function PostDetailPage() {
             </ul>
           </article>
         ))}
+      </section>
+
+      <section>
+        <h2>댓글</h2>
+
+        <form onSubmit={handleCreateComment}>
+          <textarea
+            value={commentContent}
+            onChange={(event) => setCommentContent(event.target.value)}
+            placeholder="응원이나 피드백을 남겨보세요."
+          />
+          <button type="submit">댓글 작성</button>
+        </form>
+
+        {commentError && <p>{commentError}</p>}
+
+        {post.comments.length === 0 ? (
+          <p>아직 댓글이 없습니다.</p>
+        ) : (
+          <ul>
+            {post.comments.map((comment) => (
+              <li key={comment.id}>
+                <p>{comment.content}</p>
+                <div>
+                  {comment.author.nickname} ·{' '}
+                  {new Date(comment.createdAt).toLocaleString()}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleDeleteComment(comment.id)}
+                >
+                  삭제
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       <section>

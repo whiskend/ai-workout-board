@@ -1,4 +1,5 @@
 import {
+  ArrayMaxSize,
   ArrayMinSize,
   IsArray,
   IsDateString,
@@ -31,4 +32,10 @@ export class CreatePostDto {
   @ValidateNested({ each: true })
   @Type(() => CreateExerciseDto)
   exercises: CreateExerciseDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(10)
+  @IsString({ each: true })
+  tags?: string[];
 }
