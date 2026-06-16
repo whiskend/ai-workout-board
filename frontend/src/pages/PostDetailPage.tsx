@@ -1,9 +1,23 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useParams } from 'react-router';
+import { Bot, ChevronLeft, Play, Trash2 } from 'lucide-react';
 import { analyzePost, createComment, deleteComment, getPost } from '../api/posts';
 import type { AnalysisResult } from '../types/analysis';
 import type { Post } from '../types/post';
+import { PageHeader } from '@/components/PageHeader';
+import { TagBadge } from '@/components/TagBadge';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { Textarea } from '@/components/ui/textarea';
+import { formatDate, formatDateTime } from '@/lib/format';
 
 export default function PostDetailPage() {
   const params = useParams();
@@ -96,159 +110,275 @@ export default function PostDetailPage() {
   }
 
   if (isLoading) {
-    return <main>게시글을 불러오는 중입니다.</main>;
+    return <div className="text-sm text-muted-foreground">게시글을 불러오는 중입니다.</div>;
   }
 
   if (!post) {
-    return <main>{error || '게시글을 찾을 수 없습니다.'}</main>;
+    return <div className="text-sm text-muted-foreground">{error || '게시글을 찾을 수 없습니다.'}</div>;
   }
 
   return (
-    <main>
-      <Link to="/posts">목록으로</Link>
-      <h1>{post.title}</h1>
-      <p>작성자: {post.author.nickname}</p>
-      <p>운동 날짜: {new Date(post.date).toLocaleDateString()}</p>
-      <p>운동 부위: {post.bodyPart}</p>
-      {post.memo && <p>메모: {post.memo}</p>}
-      {post.postTags.length > 0 && (
-        <p>
-          태그:{' '}
-          {post.postTags.map((postTag) => (
-            <span key={postTag.tagId}>#{postTag.tag.name} </span>
-          ))}
-        </p>
-      )}
+    <div>
+      <PageHeader
+        title={post.title}
+        description={`${post.author.nickname} · ${formatDate(post.date)} · ${post.bodyPart}`}
+        actions={
+          <Button asChild variant="outline">
+            <Link to="/posts">
+              <ChevronLeft className="h-4 w-4" />
+              목록
+            </Link>
+          </Button>
+        }
+      />
 
-      <section>
-        <h2>운동 기록</h2>
-        {post.exercises.map((exercise) => (
-          <article key={exercise.id}>
-            <h3>{exercise.exerciseName}</h3>
-            <p>무게: {exercise.weightKg}kg</p>
-            {exercise.targetReps && <p>목표 반복 수: {exercise.targetReps}</p>}
-
-            <ul>
-              {exercise.sets.map((set) => (
-                <li key={set.id}>
-                  {set.setNumber}세트: {set.reps}회
-                </li>
-              ))}
-            </ul>
-          </article>
-        ))}
-      </section>
-
-      <section>
-        <h2>댓글</h2>
-
-        <form onSubmit={handleCreateComment}>
-          <textarea
-            value={commentContent}
-            onChange={(event) => setCommentContent(event.target.value)}
-            placeholder="응원이나 피드백을 남겨보세요."
-          />
-          <button type="submit">댓글 작성</button>
-        </form>
-
-        {commentError && <p>{commentError}</p>}
-
-        {post.comments.length === 0 ? (
-          <p>아직 댓글이 없습니다.</p>
-        ) : (
-          <ul>
-            {post.comments.map((comment) => (
-              <li key={comment.id}>
-                <p>{comment.content}</p>
-                <div>
-                  {comment.author.nickname} ·{' '}
-                  {new Date(comment.createdAt).toLocaleString()}
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>기록 정보</CardTitle>
+              <CardDescription>운동 부위와 메모, 태그를 확인합니다.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-3 text-sm sm:grid-cols-3">
+                <div className="rounded-lg bg-muted/50 p-3">
+                  <div className="text-xs text-muted-foreground">작성자</div>
+                  <div className="mt-1 font-medium">{post.author.nickname}</div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => handleDeleteComment(comment.id)}
-                >
-                  삭제
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+                <div className="rounded-lg bg-muted/50 p-3">
+                  <div className="text-xs text-muted-foreground">운동 날짜</div>
+                  <div className="mt-1 font-medium">{formatDate(post.date)}</div>
+                </div>
+                <div className="rounded-lg bg-muted/50 p-3">
+                  <div className="text-xs text-muted-foreground">운동 부위</div>
+                  <div className="mt-1 font-medium">{post.bodyPart}</div>
+                </div>
+              </div>
 
-      <section>
-        <h2>AI 분석</h2>
-        <button type="button" onClick={handleAnalyze} disabled={isAnalyzing}>
-          {isAnalyzing ? '분석 중...' : 'AI 분석'}
-        </button>
+              {post.memo && (
+                <div className="rounded-lg border border-border p-4 text-sm leading-6">
+                  {post.memo}
+                </div>
+              )}
 
-        {analysisError && <p>{analysisError}</p>}
+              {post.postTags.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {post.postTags.map((postTag) => (
+                    <TagBadge key={postTag.tagId} name={postTag.tag.name} />
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
-        {analysis && (
-          <article>
-            <h3>요약</h3>
-            <p>{analysis.summary}</p>
-
-            <h3>추천</h3>
-            <p>{analysis.recommendation}</p>
-
-            <h3>다음 목표</h3>
-            <p>{analysis.nextGoal}</p>
-
-            <h3>분석 근거</h3>
-            <ul>
-              {analysis.basis.map((basis) => (
-                <li key={basis}>{basis}</li>
+          <Card>
+            <CardHeader>
+              <CardTitle>운동 기록</CardTitle>
+              <CardDescription>운동별 무게, 목표 반복 수, 세트 기록입니다.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {post.exercises.map((exercise) => (
+                <div key={exercise.id} className="overflow-hidden rounded-lg border border-border">
+                  <div className="flex flex-col gap-1 bg-muted/50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <h3 className="font-semibold">{exercise.exerciseName}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {exercise.weightKg}kg
+                        {exercise.targetReps && ` · 목표 ${exercise.targetReps}회`}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 border-t border-border bg-background px-4 py-2 text-xs font-medium text-muted-foreground">
+                    <span>세트</span>
+                    <span>반복 수</span>
+                  </div>
+                  {exercise.sets.map((set) => (
+                    <div
+                      key={set.id}
+                      className="grid grid-cols-2 border-t border-border px-4 py-3 text-sm"
+                    >
+                      <span>{set.setNumber}세트</span>
+                      <span>{set.reps}회</span>
+                    </div>
+                  ))}
+                </div>
               ))}
-            </ul>
+            </CardContent>
+          </Card>
 
-            {analysis.workflowSteps.length > 0 && (
-              <>
-                <h3>분석 흐름</h3>
-                <ol>
-                  {analysis.workflowSteps.map((step) => (
-                    <li key={step.step}>
-                      {step.name} - {step.status}: {step.detail}
-                    </li>
+          <Card>
+            <CardHeader>
+              <CardTitle>댓글</CardTitle>
+              <CardDescription>응원이나 피드백을 남깁니다.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <form className="space-y-3" onSubmit={handleCreateComment}>
+                <Textarea
+                  value={commentContent}
+                  onChange={(event) => setCommentContent(event.target.value)}
+                  placeholder="응원이나 피드백을 남겨보세요."
+                />
+                <div className="flex justify-end">
+                  <Button type="submit" disabled={!commentContent.trim()}>
+                    댓글 작성
+                  </Button>
+                </div>
+              </form>
+
+              {commentError && (
+                <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                  {commentError}
+                </p>
+              )}
+
+              {post.comments.length === 0 ? (
+                <p className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+                  아직 댓글이 없습니다.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {post.comments.map((comment) => (
+                    <div key={comment.id} className="rounded-lg border border-border p-4">
+                      <p className="text-sm leading-6">{comment.content}</p>
+                      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+                        <span>
+                          {comment.author.nickname} · {formatDateTime(comment.createdAt)}
+                        </span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteComment(comment.id)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          삭제
+                        </Button>
+                      </div>
+                    </div>
                   ))}
-                </ol>
-              </>
-            )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
 
-            {analysis.toolCalls.length > 0 && (
-              <>
-                <h3>도구 호출</h3>
-                <ul>
-                  {analysis.toolCalls.map((toolCall) => (
-                    <li key={`${toolCall.toolName}-${toolCall.input}`}>
-                      {toolCall.toolName}: {toolCall.input} → {toolCall.output} (
-                      {toolCall.source})
-                    </li>
-                  ))}
-                </ul>
-              </>
-            )}
+        <aside className="space-y-4 xl:sticky xl:top-8 xl:self-start">
+          <Card className="border-primary/20">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Bot className="h-5 w-5 text-primary" />
+                AI 분석
+              </CardTitle>
+              <CardDescription>
+                이전 운동 기록과 비교해 다음 목표를 추천합니다.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Button className="w-full" type="button" onClick={handleAnalyze} disabled={isAnalyzing}>
+                <Play className="h-4 w-4" />
+                {isAnalyzing ? '분석 중...' : 'AI 분석'}
+              </Button>
 
-            {analysis.referencedPosts.length > 0 && (
-              <>
-                <h3>참고한 이전 기록</h3>
-                <ul>
-                  {analysis.referencedPosts.map((referencedPost) => (
-                    <li key={referencedPost.id}>
-                      {referencedPost.date} - {referencedPost.title}
-                      {referencedPost.matchedExercises.length > 0 &&
-                        ` (${referencedPost.matchedExercises.join(', ')})`}
-                    </li>
-                  ))}
-                </ul>
-              </>
-            )}
+              {analysisError && (
+                <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                  {analysisError}
+                </p>
+              )}
 
-            <p>참고한 이전 기록 수: {analysis.referencedPostCount}</p>
-            <p>분석 모드: {analysis.analysisMode}</p>
-          </article>
-        )}
-      </section>
-    </main>
+              {!analysis && (
+                <p className="rounded-lg border border-dashed border-border p-4 text-sm leading-6 text-muted-foreground">
+                  버튼을 누르면 RAG, MCP-style tool, Agent workflow 결과가 이 패널에 표시됩니다.
+                </p>
+              )}
+
+              {analysis && (
+                <div className="space-y-5">
+                  <section>
+                    <h3 className="text-sm font-semibold">요약</h3>
+                    <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                      {analysis.summary}
+                    </p>
+                  </section>
+                  <Separator />
+                  <section>
+                    <h3 className="text-sm font-semibold">추천</h3>
+                    <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                      {analysis.recommendation}
+                    </p>
+                  </section>
+                  <section className="rounded-lg bg-primary/10 p-4">
+                    <h3 className="text-sm font-semibold text-primary">다음 목표</h3>
+                    <p className="mt-2 text-sm leading-6">{analysis.nextGoal}</p>
+                  </section>
+
+                  <section>
+                    <h3 className="text-sm font-semibold">분석 근거</h3>
+                    <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+                      {analysis.basis.map((basis) => (
+                        <li key={basis}>- {basis}</li>
+                      ))}
+                    </ul>
+                  </section>
+
+                  {analysis.referencedPosts.length > 0 && (
+                    <section>
+                      <h3 className="text-sm font-semibold">참고한 이전 기록</h3>
+                      <div className="mt-2 space-y-2">
+                        {analysis.referencedPosts.map((referencedPost) => (
+                          <div
+                            key={referencedPost.id}
+                            className="rounded-md border border-border p-3 text-sm"
+                          >
+                            <div className="font-medium">{referencedPost.title}</div>
+                            <div className="mt-1 text-xs text-muted-foreground">
+                              {referencedPost.date}
+                              {referencedPost.matchedExercises.length > 0 &&
+                                ` · ${referencedPost.matchedExercises.join(', ')}`}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  )}
+
+                  {analysis.workflowSteps.length > 0 && (
+                    <section>
+                      <h3 className="text-sm font-semibold">Agent workflow</h3>
+                      <ol className="mt-2 space-y-2 text-sm text-muted-foreground">
+                        {analysis.workflowSteps.map((step) => (
+                          <li key={step.step}>
+                            {step.step}. {step.name} - {step.status}
+                          </li>
+                        ))}
+                      </ol>
+                    </section>
+                  )}
+
+                  {analysis.toolCalls.length > 0 && (
+                    <section>
+                      <h3 className="text-sm font-semibold">MCP-style toolCalls</h3>
+                      <div className="mt-2 space-y-2 text-xs text-muted-foreground">
+                        {analysis.toolCalls.map((toolCall) => (
+                          <div
+                            key={`${toolCall.toolName}-${toolCall.input}`}
+                            className="rounded-md bg-muted p-3"
+                          >
+                            {toolCall.input} → {toolCall.output}
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  )}
+
+                  <p className="text-xs text-muted-foreground">
+                    참고 기록 {analysis.referencedPostCount}개 · {analysis.analysisMode}
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </aside>
+      </div>
+    </div>
   );
 }
