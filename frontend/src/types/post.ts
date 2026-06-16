@@ -18,6 +18,29 @@ export type Exercise = {
   sets: ExerciseSet[];
 };
 
+export type Comment = {
+  id: number;
+  postId: number;
+  authorId: number;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+  author: User;
+};
+
+export type Tag = {
+  id: number;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type PostTag = {
+  postId: number;
+  tagId: number;
+  tag: Tag;
+};
+
 export type Post = {
   id: number;
   authorId: number;
@@ -29,6 +52,17 @@ export type Post = {
   updatedAt: string;
   author: User;
   exercises: Exercise[];
+  comments: Comment[];
+  postTags: PostTag[];
+};
+
+export type PostListResponse = {
+  items: Post[];
+  totalCount: number;
+  limit: number;
+  offset: number;
+  hasNext: boolean;
+  hasPrevious: boolean;
 };
 
 export type CreatePostRequest = {
@@ -46,4 +80,9 @@ export type CreatePostRequest = {
       perceivedDifficulty?: number;
     }[];
   }[];
+  tags?: string[];
+};
+
+export type CreateCommentRequest = {
+  content: string;
 };

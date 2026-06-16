@@ -15,7 +15,8 @@ model User {
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
-  posts Post[]
+  posts    Post[]
+  comments Comment[]
 }
 
 model Post {
@@ -30,6 +31,8 @@ model Post {
 
   author    User       @relation(fields: [authorId], references: [id])
   exercises Exercise[]
+  comments  Comment[]
+  postTags  PostTag[]
 
   @@index([authorId])
   @@index([date])
@@ -66,4 +69,41 @@ model ExerciseSet {
 
   @@index([exerciseId])
   @@map("WorkoutSet")
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  postId    Int
+  authorId  Int
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@index([authorId])
+}
+
+model Tag {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  postTags PostTag[]
+
+  @@index([name])
+}
+
+model PostTag {
+  postId Int
+  tagId  Int
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([postId, tagId])
+  @@index([tagId])
 }
