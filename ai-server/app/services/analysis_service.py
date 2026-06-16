@@ -17,8 +17,28 @@ from app.schemas.analysis import (
 load_dotenv()
 
 
+ALIASES = {
+    "bench": "벤치프레스",
+    "bench press": "벤치프레스",
+    "벤치": "벤치프레스",
+    "벤치프레스": "벤치프레스",
+    "squat": "스쿼트",
+    "스쿼트": "스쿼트",
+    "deadlift": "데드리프트",
+    "데드": "데드리프트",
+    "데드리프트": "데드리프트",
+    "lat pulldown": "랫풀다운",
+    "랫풀": "랫풀다운",
+    "랫풀다운": "랫풀다운",
+    "ohp": "오버헤드프레스",
+    "overhead press": "오버헤드프레스",
+    "오버헤드프레스": "오버헤드프레스",
+}
+
+
 def _normalize_name(name: str) -> str:
-    return name.strip().lower()
+    cleaned_name = name.strip()
+    return ALIASES.get(cleaned_name.lower(), cleaned_name).lower()
 
 
 def _format_sets(exercise: ExerciseRecord) -> str:

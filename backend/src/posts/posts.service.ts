@@ -233,9 +233,27 @@ export class PostsService {
       throw new ForbiddenException('게시글을 분석할 권한이 없습니다.');
     }
 
-    const normalizedNames = currentPost.exercises
-      .map((exercise) => exercise.normalizedName)
-      .filter((name): name is string => Boolean(name));
+    const exerciseNames = currentPost.exercises
+      .map((exercise) => exercise.exerciseName)
+      .filter(Boolean);
+    const normalizedResult = exerciseNames.length
+      ? await this.aiService.normalizeExerciseNames(exerciseNames)
+      : {
+          normalizedNames: [],
+          toolCalls: [],
+        };
+    const normalizedNames = Array.from(
+      new Set(
+        [
+          ...currentPost.exercises
+            .map((exercise) => exercise.normalizedName)
+            .filter((name): name is string => Boolean(name)),
+          ...normalizedResult.normalizedNames.map((name) =>
+            name.trim().toLowerCase(),
+          ),
+        ].filter(Boolean),
+      ),
+    );
 
     const previousPosts = normalizedNames.length
       ? await this.prisma.post.findMany({
@@ -266,6 +284,7 @@ export class PostsService {
     return this.aiService.analyzePost({
       currentPost: toAiPostRecord(currentPost),
       previousPosts: previousPosts.map(toAiPostRecord),
+      toolCalls: normalizedResult.toolCalls,
     });
   }
 }

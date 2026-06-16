@@ -107,6 +107,33 @@ export default function PostDetailPage() {
               ))}
             </ul>
 
+            {analysis.workflowSteps.length > 0 && (
+              <>
+                <h3>분석 흐름</h3>
+                <ol>
+                  {analysis.workflowSteps.map((step) => (
+                    <li key={step.step}>
+                      {step.name} - {step.status}: {step.detail}
+                    </li>
+                  ))}
+                </ol>
+              </>
+            )}
+
+            {analysis.toolCalls.length > 0 && (
+              <>
+                <h3>도구 호출</h3>
+                <ul>
+                  {analysis.toolCalls.map((toolCall) => (
+                    <li key={`${toolCall.toolName}-${toolCall.input}`}>
+                      {toolCall.toolName}: {toolCall.input} → {toolCall.output} (
+                      {toolCall.source})
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+
             {analysis.referencedPosts.length > 0 && (
               <>
                 <h3>참고한 이전 기록</h3>

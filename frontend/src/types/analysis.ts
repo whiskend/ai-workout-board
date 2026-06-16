@@ -11,4 +11,17 @@ export type AnalysisResult = {
   }[];
   basis: string[];
   analysisMode: string;
+  toolCalls: {
+    toolName: string;
+    input: string;
+    output: string;
+    status: string;
+    source: string;
+  }[];
+  workflowSteps: {
+    step: number;
+    name: string;
+    status: string;
+    detail: string;
+  }[];
 };

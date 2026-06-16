@@ -40,6 +40,8 @@
 | 2026-06-15 | React는 FastAPI를 직접 호출하지 않고 NestJS를 거침 | 인증, 권한 검사, DB 조회 책임을 NestJS에 모으기 위해 | 유지 |
 | 2026-06-15 | #9 AI 분석과 #10 RAG 최소 구현을 한 브랜치에서 함께 진행 | AI 분석은 이전 기록 조회가 있어야 의미가 있으므로 분리보다 함께 구현하는 편이 자연스러움 | 유지 |
 | 2026-06-15 | OpenAI 호출 실패 시 rule-based 분석으로 fallback | API 키가 없거나 네트워크가 불안정해도 데모 흐름이 끊기지 않게 하기 위해 | 유지 |
+| 2026-06-15 | MCP는 FastAPI 내부 운동명 정규화 tool endpoint로 구현 | 별도 서버보다 일정상 안전하고 서비스 주제와 직접 연결되기 때문에 | 유지 |
+| 2026-06-15 | Agent는 별도 `agent_service.py`의 5단계 workflow로 구현 | 완전 자율 에이전트보다 발표 가능한 최소 workflow가 현재 범위에 맞기 때문에 | 유지 |
 
 ---
 
@@ -144,3 +146,59 @@
 - OpenAI 응답 JSON 검증 강화
 - fallback이 발생했는지 운영 로그로 남기는 방식
 - 사용자 화면에 분석 모드를 얼마나 노출할지 결정
+
+---
+
+## 2026-06-15 - MCP tool 구현 범위
+
+결정:
+- MCP는 별도 서버가 아니라 FastAPI 내부 MCP-style tool endpoint로 구현한다.
+- 첫 tool은 운동명 정규화 tool만 구현한다.
+
+선택지:
+- A안: FastAPI 내부 tool endpoint
+- B안: 별도 `mcp-server/`
+- C안: NestJS 내부 tool 흉내
+
+선택한 이유:
+- 현재 AI 기능 책임은 FastAPI에 모여 있다.
+- 별도 MCP 서버는 실행 프로세스와 학습량이 늘어난다.
+- 운동명 정규화는 현재 서비스의 RAG 검색 품질과 직접 연결된다.
+- 발표에서는 “AI 분석 전에 tool을 호출해 운동명을 표준화한다”고 설명할 수 있다.
+
+포기한 것:
+- 완전한 독립 MCP 서버
+- 외부 운동 정보 API 연동
+- 날씨/주식 같은 서비스 주제와 약한 tool
+
+나중에 다시 볼 것:
+- 시간이 남으면 독립 MCP 서버로 분리
+- 운동명 alias 사전 확장
+- 외부 운동 정보 API 연결
+
+---
+
+## 2026-06-15 - Agent workflow 구현 범위
+
+결정:
+- Agent는 별도 `agent_service.py`에서 정해진 5단계 workflow로 구현한다.
+
+선택지:
+- A안: `analysis_service.py` 안에 단계 함수로 구현
+- B안: 별도 `agent_service.py`로 workflow 분리
+- C안: NestJS에서 workflow 관리
+
+선택한 이유:
+- `analysis_service.py`가 너무 커지는 것을 막을 수 있다.
+- FastAPI가 AI 전용 서버라는 구조와 맞다.
+- 발표에서 “Agent가 도구 호출과 분석 순서를 관리한다”고 설명하기 좋다.
+
+포기한 것:
+- LangGraph 같은 별도 workflow 라이브러리
+- 완전 자율 에이전트
+- 분석 결과 DB 저장
+
+나중에 다시 볼 것:
+- workflow 단계 실패 로그 저장
+- tool 호출 실패 시 사용자 메시지 개선
+- 더 복잡한 agent 상태 관리
