@@ -8,26 +8,30 @@ datasource db {
 }
 
 model User {
-  id           Int           @id @default(autoincrement())
-  email        String        @unique
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
   nickname     String
   passwordHash String
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  posts    Post[]
-  comments Comment[]
+  posts              Post[]
+  comments           Comment[]
+  onboardingProfile  OnboardingProfile?
+  routineCycle       RoutineCycle?
+  workoutAssignments WorkoutAssignment[]
+  workoutLogs        WorkoutLog[]
 }
 
 model Post {
-  id        Int        @id @default(autoincrement())
+  id        Int      @id @default(autoincrement())
   authorId  Int
   title     String
-  date      DateTime   @map("workoutDate")
+  date      DateTime @map("workoutDate")
   bodyPart  String
   memo      String?
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   author    User       @relation(fields: [authorId], references: [id])
   exercises Exercise[]
@@ -41,17 +45,17 @@ model Post {
 }
 
 model Exercise {
-  id             Int          @id @default(autoincrement())
+  id             Int     @id @default(autoincrement())
   postId         Int
   exerciseName   String
   normalizedName String?
   weightKg       Float
   targetReps     Int?
-  orderIndex     Int          @default(0)
+  orderIndex     Int     @default(0)
   memo           String?
 
-  post           Post         @relation(fields: [postId], references: [id], onDelete: Cascade)
-  sets           ExerciseSet[]
+  post Post          @relation(fields: [postId], references: [id], onDelete: Cascade)
+  sets ExerciseSet[]
 
   @@index([postId])
   @@index([exerciseName])
@@ -59,7 +63,7 @@ model Exercise {
 }
 
 model ExerciseSet {
-  id                  Int       @id @default(autoincrement())
+  id                  Int  @id @default(autoincrement())
   exerciseId          Int
   setNumber           Int
   reps                Int
@@ -106,4 +110,130 @@ model PostTag {
 
   @@id([postId, tagId])
   @@index([tagId])
+}
+
+model OnboardingProfile {
+  id                 Int      @id @default(autoincrement())
+  userId             Int      @unique
+  availableEquipment String[]
+  trainingGoal       String
+  availableMinutes   Int
+  splitType          String
+  experienceLevel    String
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model RoutineCycle {
+  id              Int      @id @default(autoincrement())
+  userId          Int      @unique
+  splitType       String
+  dayLabels       String[]
+  currentDayIndex Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assignments WorkoutAssignment[]
+}
+
+model WorkoutAssignment {
+  id             Int      @id @default(autoincrement())
+  userId         Int
+  routineCycleId Int?
+  splitDayIndex  Int
+  title          String
+  scheduledDate  DateTime
+  status         String   @default("planned")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user         User                        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  routineCycle RoutineCycle?               @relation(fields: [routineCycleId], references: [id], onDelete: SetNull)
+  exercises    WorkoutAssignmentExercise[]
+  workoutLog   WorkoutLog?
+
+  @@index([userId])
+  @@index([routineCycleId])
+  @@index([scheduledDate])
+  @@index([status])
+}
+
+model WorkoutAssignmentExercise {
+  id             Int     @id @default(autoincrement())
+  assignmentId   Int
+  exerciseName   String
+  normalizedName String?
+  targetWeightKg Float?
+  targetSets     Int
+  targetReps     Int?
+  orderIndex     Int     @default(0)
+  coachNote      String?
+
+  assignment WorkoutAssignment      @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  sets       WorkoutAssignmentSet[]
+
+  @@index([assignmentId])
+  @@index([normalizedName])
+}
+
+model WorkoutAssignmentSet {
+  id                   Int    @id @default(autoincrement())
+  assignmentExerciseId Int
+  setNumber            Int
+  targetWeightKg       Float?
+  targetReps           Int?
+
+  assignmentExercise WorkoutAssignmentExercise @relation(fields: [assignmentExerciseId], references: [id], onDelete: Cascade)
+
+  @@index([assignmentExerciseId])
+}
+
+model WorkoutLog {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  assignmentId Int?     @unique
+  workoutDate  DateTime
+  bodyPart     String?
+  memo         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user       User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assignment WorkoutAssignment?   @relation(fields: [assignmentId], references: [id], onDelete: SetNull)
+  exercises  WorkoutLogExercise[]
+
+  @@index([userId])
+  @@index([workoutDate])
+  @@index([bodyPart])
+}
+
+model WorkoutLogExercise {
+  id             Int     @id @default(autoincrement())
+  workoutLogId   Int
+  exerciseName   String
+  normalizedName String?
+  orderIndex     Int     @default(0)
+  memo           String?
+
+  workoutLog WorkoutLog      @relation(fields: [workoutLogId], references: [id], onDelete: Cascade)
+  sets       WorkoutLogSet[]
+
+  @@index([workoutLogId])
+  @@index([normalizedName])
+}
+
+model WorkoutLogSet {
+  id                   Int    @id @default(autoincrement())
+  workoutLogExerciseId Int
+  setNumber            Int
+  weightKg             Float?
+  reps                 Int
+  perceivedDifficulty  Int?
+
+  workoutLogExercise WorkoutLogExercise @relation(fields: [workoutLogExerciseId], references: [id], onDelete: Cascade)
+
+  @@index([workoutLogExerciseId])
 }

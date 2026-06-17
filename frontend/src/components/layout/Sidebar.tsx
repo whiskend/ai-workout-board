@@ -6,6 +6,8 @@ import {
   Home,
   LogIn,
   PenLine,
+  Sparkles,
+  Settings2,
   UserRound,
   UserPlus,
 } from 'lucide-react';
@@ -13,6 +15,8 @@ import { cn } from '@/lib/utils';
 
 const primaryItems = [
   { to: '/', label: '홈', icon: Home },
+  { to: '/coach', label: 'AI 코치', icon: Sparkles },
+  { to: '/onboarding', label: '코치 설정', icon: Settings2 },
   { to: '/posts', label: '운동 기록', icon: ClipboardList },
   { to: '/posts/new', label: '기록 작성', icon: PenLine },
   { to: '/users', label: '내 정보', icon: UserRound },

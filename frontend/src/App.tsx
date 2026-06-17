@@ -5,6 +5,8 @@ import AboutPage from './pages/AboutPage';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import NotFoundPage from './pages/NotFoundPage';
+import CoachPage from './pages/CoachPage';
+import OnboardingPage from './pages/OnboardingPage';
 import PostCreatePage from './pages/PostCreatePage';
 import PostDetailPage from './pages/PostDetailPage';
 import PostListPage from './pages/PostListPage';
@@ -18,6 +20,8 @@ function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/coach" element={<CoachPage />} />
+        <Route path="/onboarding" element={<OnboardingPage />} />
         <Route path="/posts" element={<PostListPage />} />
         <Route path="/posts/new" element={<PostCreatePage />} />
         <Route path="/posts/:id" element={<PostDetailPage />} />
