@@ -9,6 +9,8 @@ FROM node:22-alpine AS builder
 
 WORKDIR /app
 
+ENV DATABASE_URL=postgresql://build:build@localhost:5432/build?schema=public
+
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npx prisma generate
