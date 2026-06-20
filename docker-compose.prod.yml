@@ -1,0 +1,24 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ai-workout-backend
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env.production
+    ports:
+      - "3000:3000"
+    depends_on:
+      - ai-server
+
+  ai-server:
+    build:
+      context: ./ai-server
+      dockerfile: Dockerfile
+    container_name: ai-workout-ai-server
+    restart: unless-stopped
+    env_file:
+      - ./ai-server/.env.production
+    expose:
+      - "8000"
