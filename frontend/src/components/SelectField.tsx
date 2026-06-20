@@ -16,6 +16,8 @@ export function SelectField({
   icon: SelectIcon;
   onChange: (value: string) => void;
 }) {
+  const selectedOption = options.find((option) => option.value === value);
+
   return (
     <div className="space-y-2">
       <Label className="flex items-center gap-2" htmlFor={id}>
@@ -34,6 +36,11 @@ export function SelectField({
           </option>
         ))}
       </select>
+      {selectedOption?.description && (
+        <p className="rounded-md bg-muted/60 px-3 py-2 text-xs leading-5 text-muted-foreground">
+          {selectedOption.description}
+        </p>
+      )}
     </div>
   );
 }

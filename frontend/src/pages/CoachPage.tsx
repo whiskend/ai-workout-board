@@ -8,7 +8,12 @@ import {
   Settings2,
   Sparkles,
 } from 'lucide-react';
-import { getCoachDashboard } from '@/api/coach';
+import {
+  createTodayAssignment,
+  getCoachDashboard,
+  getRoutineCandidates,
+  selectRoutineCandidate,
+} from '@/api/coach';
 import { getStoredToken } from '@/api/client';
 import { PageHeader } from '@/components/PageHeader';
 import { Badge } from '@/components/ui/badge';
@@ -20,103 +25,81 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { formatDate } from '@/lib/format';
 import { formatCoachLabel, goalLabels, splitLabels } from '@/lib/coachOptions';
-import type { CoachDashboard, WorkoutAssignment, WorkoutLog } from '@/types/coach';
+import type { CoachDashboard, RoutineCandidatesResponse } from '@/types/coach';
+import { AssignmentCard } from './coach/AssignmentCard';
+import { RecentLogCard } from './coach/RecentLogCard';
+import { RoutineCandidatesPanel } from './coach/RoutineCandidatesPanel';
 
 const nextActionLabels: Record<CoachDashboard['nextAction'], string> = {
   complete_onboarding: '온보딩 필요',
+  select_routine: '루틴 선택 필요',
   start_assignment: '오늘 과제 확인',
   generate_assignment: '과제 생성 대기',
 };
 
-function AssignmentCard({ assignment }: { assignment: WorkoutAssignment | null }) {
-  if (!assignment) {
-    return (
-      <Card className="border-dashed">
-        <CardHeader>
-          <CardTitle>오늘의 운동 과제</CardTitle>
-          <CardDescription>
-            다음 PR에서 과제 생성 로직을 연결하면 이곳에 오늘 할 운동이 표시됩니다.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button asChild variant="secondary">
-            <Link to="/onboarding">코치 설정 확인</Link>
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{assignment.title}</CardTitle>
-        <CardDescription>{formatDate(assignment.scheduledDate)}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {assignment.exercises.map((exercise) => (
-          <div key={exercise.id} className="rounded-lg border border-border p-3">
-            <div className="flex items-center justify-between gap-3">
-              <div className="font-medium">{exercise.exerciseName}</div>
-              <Badge variant="outline">{exercise.targetSets}세트</Badge>
-            </div>
-            <div className="mt-2 flex flex-wrap gap-2 text-sm text-muted-foreground">
-              {exercise.targetWeightKg && <span>{exercise.targetWeightKg}kg</span>}
-              {exercise.targetReps && <span>{exercise.targetReps}회 목표</span>}
-            </div>
-          </div>
-        ))}
-      </CardContent>
-    </Card>
-  );
-}
-
-function RecentLogCard({ log }: { log: WorkoutLog }) {
-  const firstExercise = log.exercises[0];
-
-  return (
-    <div className="rounded-lg border border-border p-3">
-      <div className="flex items-center justify-between gap-3">
-        <div className="font-medium">{log.bodyPart ?? '운동 기록'}</div>
-        <span className="text-xs text-muted-foreground">{formatDate(log.workoutDate)}</span>
-      </div>
-      {firstExercise && (
-        <p className="mt-2 text-sm text-muted-foreground">
-          {firstExercise.exerciseName} 외 {Math.max(log.exercises.length - 1, 0)}개 운동
-        </p>
-      )}
-    </div>
-  );
-}
-
 export default function CoachPage() {
   const [dashboard, setDashboard] = useState<CoachDashboard | null>(null);
+  const [routineCandidates, setRoutineCandidates] =
+    useState<RoutineCandidatesResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isCreatingAssignment, setIsCreatingAssignment] = useState(false);
+  const [selectingCandidateKey, setSelectingCandidateKey] = useState('');
   const [error, setError] = useState('');
   const token = getStoredToken();
 
-  useEffect(() => {
-    async function loadDashboard() {
-      if (!token) {
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        setError('');
-        const data = await getCoachDashboard();
-        setDashboard(data);
-      } catch (error) {
-        setError(error instanceof Error ? error.message : '코치 대시보드를 불러오지 못했습니다.');
-      } finally {
-        setIsLoading(false);
-      }
+  async function loadCoachData() {
+    if (!token) {
+      setIsLoading(false);
+      return;
     }
 
-    loadDashboard();
+    try {
+      setError('');
+      const data = await getCoachDashboard();
+      setDashboard(data);
+
+      if (data.profile && data.nextAction === 'select_routine') {
+        setRoutineCandidates(await getRoutineCandidates());
+      } else {
+        setRoutineCandidates(null);
+      }
+    } catch (error) {
+      setError(error instanceof Error ? error.message : '코치 대시보드를 불러오지 못했습니다.');
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadCoachData();
   }, [token]);
+
+  async function handleSelectCandidate(candidateKey: string) {
+    try {
+      setError('');
+      setSelectingCandidateKey(candidateKey);
+      await selectRoutineCandidate(candidateKey);
+      await loadCoachData();
+    } catch (error) {
+      setError(error instanceof Error ? error.message : '루틴을 선택하지 못했습니다.');
+    } finally {
+      setSelectingCandidateKey('');
+    }
+  }
+
+  async function handleCreateAssignment() {
+    try {
+      setError('');
+      setIsCreatingAssignment(true);
+      await createTodayAssignment();
+      await loadCoachData();
+    } catch (error) {
+      setError(error instanceof Error ? error.message : '오늘 운동을 만들지 못했습니다.');
+    } finally {
+      setIsCreatingAssignment(false);
+    }
+  }
 
   if (!token) {
     return (
@@ -149,12 +132,13 @@ export default function CoachPage() {
   const profile = dashboard?.profile;
   const routineCycle = dashboard?.routineCycle;
   const currentDayLabel = routineCycle?.dayLabels[routineCycle.currentDayIndex] ?? '설정 전';
+  const canCreateAssignment = dashboard?.nextAction === 'generate_assignment';
 
   return (
     <div>
       <PageHeader
         title="AI 코치"
-        description="운동 환경과 기록을 바탕으로 오늘 해야 할 일을 확인하는 화면입니다."
+        description="오늘 해야 할 운동을 만들고 기록 흐름으로 이어가는 화면입니다."
         actions={
           <Button asChild variant="outline">
             <Link to="/onboarding">
@@ -212,7 +196,20 @@ export default function CoachPage() {
               </Card>
             </div>
 
-            <AssignmentCard assignment={dashboard?.todayAssignment ?? null} />
+            {dashboard?.nextAction === 'select_routine' ? (
+              <RoutineCandidatesPanel
+                routineCandidates={routineCandidates}
+                selectingCandidateKey={selectingCandidateKey}
+                onSelectCandidate={handleSelectCandidate}
+              />
+            ) : (
+              <AssignmentCard
+                assignment={dashboard?.todayAssignment ?? null}
+                canCreateAssignment={canCreateAssignment}
+                isCreatingAssignment={isCreatingAssignment}
+                onCreateAssignment={handleCreateAssignment}
+              />
+            )}
           </div>
 
           <div className="space-y-4">
@@ -238,14 +235,14 @@ export default function CoachPage() {
                   <History className="h-5 w-5 text-primary" />
                   최근 수행 기록
                 </CardTitle>
-                <CardDescription>WorkoutLog 모델에 쌓일 수행 결과 영역입니다.</CardDescription>
+                <CardDescription>수행 기록이 쌓이면 최근 운동이 여기에 표시됩니다.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 {dashboard?.recentLogs.length ? (
                   dashboard.recentLogs.map((log) => <RecentLogCard key={log.id} log={log} />)
                 ) : (
                   <p className="text-sm text-muted-foreground">
-                    아직 수행 기록이 없습니다. 다음 단계에서 오늘의 과제 수행 입력을 연결합니다.
+                    아직 수행 기록이 없습니다. 오늘 과제를 만들고 첫 기록을 남기면 됩니다.
                   </p>
                 )}
               </CardContent>

@@ -127,16 +127,55 @@ model OnboardingProfile {
 }
 
 model RoutineCycle {
-  id              Int      @id @default(autoincrement())
-  userId          Int      @unique
-  splitType       String
-  dayLabels       String[]
-  currentDayIndex Int      @default(0)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                           Int       @id @default(autoincrement())
+  userId                       Int       @unique
+  splitType                    String
+  dayLabels                    String[]
+  currentDayIndex              Int       @default(0)
+  selectedCandidateKey         String?
+  selectedCandidateName        String?
+  selectedCandidateDescription String?
+  selectedAt                   DateTime?
+  createdAt                    DateTime  @default(now())
+  updatedAt                    DateTime  @updatedAt
 
   user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  routineDays RoutineDay[]
   assignments WorkoutAssignment[]
+}
+
+model RoutineDay {
+  id             Int      @id @default(autoincrement())
+  routineCycleId Int
+  dayIndex       Int
+  label          String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  routineCycle RoutineCycle     @relation(fields: [routineCycleId], references: [id], onDelete: Cascade)
+  exercises    RoutineExercise[]
+
+  @@unique([routineCycleId, dayIndex])
+  @@index([routineCycleId])
+}
+
+model RoutineExercise {
+  id             Int     @id @default(autoincrement())
+  routineDayId   Int
+  exerciseName   String
+  normalizedName String
+  equipmentType  String
+  targetSets     Int
+  targetReps     Int
+  baseWeightKg   Float?
+  orderIndex     Int     @default(0)
+  coachNote      String?
+
+  routineDay RoutineDay @relation(fields: [routineDayId], references: [id], onDelete: Cascade)
+
+  @@index([routineDayId])
+  @@index([normalizedName])
+  @@index([equipmentType])
 }
 
 model WorkoutAssignment {
@@ -198,6 +237,7 @@ model WorkoutLog {
   workoutDate  DateTime
   bodyPart     String?
   memo         String?
+  isPublic     Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

@@ -6,6 +6,7 @@ import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import NotFoundPage from './pages/NotFoundPage';
 import CoachPage from './pages/CoachPage';
+import CoachSessionPage from './pages/CoachSessionPage';
 import OnboardingPage from './pages/OnboardingPage';
 import PostCreatePage from './pages/PostCreatePage';
 import PostDetailPage from './pages/PostDetailPage';
@@ -21,6 +22,7 @@ function App() {
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/coach" element={<CoachPage />} />
+        <Route path="/coach/session/:assignmentId" element={<CoachSessionPage />} />
         <Route path="/onboarding" element={<OnboardingPage />} />
         <Route path="/posts" element={<PostListPage />} />
         <Route path="/posts/new" element={<PostCreatePage />} />

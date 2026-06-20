@@ -121,7 +121,7 @@ export default function OnboardingPage() {
     <div>
       <PageHeader
         title="코치 설정"
-        description="AI 운동 코치가 오늘의 과제를 만들 때 사용할 기본 정보를 정합니다."
+        description="우리 헬스장 기구와 내 운동 수준을 기준으로 오늘의 과제를 준비합니다."
         actions={
           <Button asChild variant="outline">
             <Link to="/coach">코치 화면</Link>
@@ -134,9 +134,11 @@ export default function OnboardingPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Dumbbell className="h-5 w-5 text-primary" />
-              사용 가능한 기구
+              우리 헬스장 기구
             </CardTitle>
-            <CardDescription>실제로 헬스장에서 사용할 수 있는 기구만 선택하세요.</CardDescription>
+            <CardDescription>
+              현재 헬스장에 있는 기구만 보여줍니다. 철봉과 평행봉은 운동 경력에 따라 과제 난이도를 조절합니다.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -185,7 +187,7 @@ export default function OnboardingPage() {
           <CardHeader>
             <CardTitle>운동 조건</CardTitle>
             <CardDescription>
-              이번 단계에서는 의료 정보가 아니라 과제 생성을 위한 운동 조건만 받습니다.
+              어려운 운동 용어 대신 실제로 원하는 방향과 현재 가능한 수준을 기준으로 고르세요.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4 md:grid-cols-2">

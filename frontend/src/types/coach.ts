@@ -16,8 +16,69 @@ export type RoutineCycle = {
   splitType: string;
   dayLabels: string[];
   currentDayIndex: number;
+  selectedCandidateKey?: string | null;
+  selectedCandidateName?: string | null;
+  selectedCandidateDescription?: string | null;
+  selectedAt?: string | null;
   createdAt: string;
   updatedAt: string;
+  routineDays?: RoutineDay[];
+};
+
+export type RoutineExercise = {
+  id: number;
+  routineDayId: number;
+  exerciseName: string;
+  normalizedName: string;
+  equipmentType: string;
+  targetSets: number;
+  targetReps: number;
+  baseWeightKg?: number | null;
+  orderIndex: number;
+  coachNote?: string | null;
+};
+
+export type RoutineDay = {
+  id: number;
+  routineCycleId: number;
+  dayIndex: number;
+  label: string;
+  createdAt: string;
+  updatedAt: string;
+  exercises: RoutineExercise[];
+};
+
+export type RoutineCandidateExercise = {
+  exerciseName: string;
+  normalizedName: string;
+  equipmentType: string;
+  targetSets: number;
+  targetReps: number;
+  baseWeightKg?: number | null;
+  orderIndex: number;
+  coachNote: string;
+};
+
+export type RoutineCandidateDay = {
+  dayIndex: number;
+  label: string;
+  exercises: RoutineCandidateExercise[];
+};
+
+export type RoutineCandidate = {
+  key: string;
+  name: string;
+  summary: string;
+  description: string;
+  recommendationReason: string;
+  isRecommended: boolean;
+  days: RoutineCandidateDay[];
+};
+
+export type RoutineCandidatesResponse = {
+  candidates: RoutineCandidate[];
+  recommendedCandidateKey: string;
+  selectedCandidateKey?: string | null;
 };
 
 export type WorkoutAssignmentSet = {
@@ -80,13 +141,34 @@ export type WorkoutLog = {
   workoutDate: string;
   bodyPart?: string | null;
   memo?: string | null;
+  isPublic: boolean;
   createdAt: string;
   updatedAt: string;
   exercises: WorkoutLogExercise[];
 };
 
+export type CompleteAssignmentSetRequest = {
+  assignmentSetId: number;
+  weightKg?: number | null;
+  reps: number;
+  perceivedDifficulty?: number | null;
+};
+
+export type CompleteAssignmentExerciseRequest = {
+  assignmentExerciseId: number;
+  memo?: string;
+  sets: CompleteAssignmentSetRequest[];
+};
+
+export type CompleteAssignmentRequest = {
+  memo?: string;
+  isPublic?: boolean;
+  exercises: CompleteAssignmentExerciseRequest[];
+};
+
 export type CoachNextAction =
   | 'complete_onboarding'
+  | 'select_routine'
   | 'start_assignment'
   | 'generate_assignment';
 
